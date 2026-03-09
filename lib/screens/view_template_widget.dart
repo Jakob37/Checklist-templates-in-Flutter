@@ -34,8 +34,9 @@ class ViewTemplateWidget extends StatelessWidget {
                           padding:
                               const EdgeInsets.symmetric(vertical: AppSizes.xs),
                           child: Text(task.label,
-                              style:
-                                  const TextStyle(color: AppColors.light)),
+                              style: const TextStyle(
+                                  color: AppColors.light,
+                                  fontSize: AppSizes.textSub)),
                         ))
                     .toList(),
               ),
