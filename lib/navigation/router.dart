@@ -57,7 +57,10 @@ class MainShell extends StatelessWidget {
     final index = _locationToIndex(location);
 
     return Scaffold(
-      body: child,
+      body: SafeArea(
+        bottom: false,
+        child: child,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: index,
         onTap: (i) {
