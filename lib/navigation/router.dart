@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../screens/templates_screen.dart';
 import '../screens/make_template_screen.dart';
 import '../screens/checklists_screen.dart';
 import '../screens/settings_screen.dart';
+import '../state/app_state.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -82,8 +85,7 @@ class MainShell extends StatelessWidget {
             label: 'Templates',
           ),
           BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.squareCheck,
-                size: AppSizes.iconMedium),
+            icon: _ChecklistNavIcon(),
             label: 'Checklists',
           ),
           BottomNavigationBarItem(
@@ -92,6 +94,47 @@ class MainShell extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ChecklistNavIcon extends StatelessWidget {
+  const _ChecklistNavIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final checklistCount = context.watch<AppState>().checklists.length;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const FaIcon(
+          FontAwesomeIcons.squareCheck,
+          size: AppSizes.iconMedium,
+        ),
+        if (checklistCount > 0)
+          Positioned(
+            top: -8,
+            right: -12,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '$checklistCount',
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
