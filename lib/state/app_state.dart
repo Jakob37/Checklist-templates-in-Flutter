@@ -164,7 +164,27 @@ class AppState extends ChangeNotifier {
   }
 
   Checklist instantiateTemplate(ChecklistTemplate template) {
-    final checkboxes = template.stacks.expand((stack) {
+    return instantiateTemplateWithSelectedOptionalGroups(
+      template,
+      selectedOptionalStackIds: {
+        for (final stack in template.stacks.where((stack) => stack.isOptional))
+          stack.id,
+      },
+    );
+  }
+
+  Checklist instantiateTemplateWithSelectedOptionalGroups(
+    ChecklistTemplate template, {
+    required Set<String> selectedOptionalStackIds,
+  }) {
+    final includedStacks = template.stacks.where((stack) {
+      if (!stack.isOptional) return true;
+      return selectedOptionalStackIds.contains(stack.id);
+    }).toList();
+
+    final instantiatedTemplate = template.copyWith(stacks: includedStacks);
+
+    final checkboxes = includedStacks.expand((stack) {
       return stack.tasks.map((task) {
         return Checkbox(
           id: generateId('checkbox'),
@@ -177,7 +197,7 @@ class AppState extends ChangeNotifier {
 
     return Checklist(
       id: generateId('checklist'),
-      template: template,
+      template: instantiatedTemplate,
       checkboxes: checkboxes,
       timecreated: DateTime.now().millisecondsSinceEpoch,
     );
@@ -227,6 +247,14 @@ class AppState extends ChangeNotifier {
     Checklist checklist,
     ChecklistTemplate template,
   ) {
+    final activeStackIds = {
+      for (final stack in checklist.template.stacks) stack.id,
+    };
+    final syncedStacks = template.stacks.where((stack) {
+      if (!stack.isOptional) return true;
+      return activeStackIds.contains(stack.id);
+    }).toList();
+    final syncedTemplate = template.copyWith(stacks: syncedStacks);
     final checkboxByTaskId = <String, Checkbox>{};
     final previousTasks =
         checklist.template.stacks.expand((stack) => stack.tasks);
@@ -242,8 +270,9 @@ class AppState extends ChangeNotifier {
       }
     }
 
-    final syncedCheckboxes =
-        template.stacks.expand((stack) => stack.tasks).map((task) {
+    final syncedCheckboxes = syncedStacks.expand((stack) => stack.tasks).map((
+      task,
+    ) {
       final existing = checkboxByTaskId[task.id];
       if (existing != null) {
         return existing.copyWith(taskId: task.id, label: task.label);
@@ -257,7 +286,7 @@ class AppState extends ChangeNotifier {
     }).toList();
 
     return checklist.copyWith(
-      template: template,
+      template: syncedTemplate,
       checkboxes: syncedCheckboxes,
     );
   }

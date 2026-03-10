@@ -33,10 +33,37 @@ class ViewTemplateWidget extends StatelessWidget {
                   if (stack.hasVisibleLabel)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSizes.xs),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              stack.trimmedLabel,
+                              style: const TextStyle(
+                                color: AppColors.faint,
+                                fontSize: AppSizes.textSub,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (stack.isOptional)
+                            const Text(
+                              'Optional',
+                              style: TextStyle(
+                                color: AppColors.highlight2,
+                                fontSize: AppSizes.textSub,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
+                  else if (stack.isOptional)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: AppSizes.xs),
                       child: Text(
-                        stack.trimmedLabel,
-                        style: const TextStyle(
-                          color: AppColors.faint,
+                        'Optional group',
+                        style: TextStyle(
+                          color: AppColors.highlight2,
                           fontSize: AppSizes.textSub,
                           fontWeight: FontWeight.bold,
                         ),

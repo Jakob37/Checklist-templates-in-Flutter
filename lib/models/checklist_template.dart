@@ -16,17 +16,25 @@ class TaskStack {
   final String id;
   final String label;
   final List<Task> tasks;
+  final bool isOptional;
 
-  TaskStack({required this.id, required this.label, required this.tasks});
+  TaskStack({
+    required this.id,
+    required this.label,
+    required this.tasks,
+    this.isOptional = false,
+  });
 
   String get trimmedLabel => label.trim();
   bool get hasVisibleLabel =>
       trimmedLabel.isNotEmpty && trimmedLabel.toLowerCase() != 'default';
 
-  TaskStack copyWith({String? label, List<Task>? tasks}) => TaskStack(
+  TaskStack copyWith({String? label, List<Task>? tasks, bool? isOptional}) =>
+      TaskStack(
         id: id,
         label: label ?? this.label,
         tasks: tasks ?? this.tasks,
+        isOptional: isOptional ?? this.isOptional,
       );
 
   factory TaskStack.fromJson(Map<String, dynamic> json) => TaskStack(
@@ -35,12 +43,14 @@ class TaskStack {
         tasks: (json['tasks'] as List<dynamic>)
             .map((t) => Task.fromJson(t as Map<String, dynamic>))
             .toList(),
+        isOptional: json['isOptional'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'label': label,
         'tasks': tasks.map((t) => t.toJson()).toList(),
+        'isOptional': isOptional,
       };
 }
 

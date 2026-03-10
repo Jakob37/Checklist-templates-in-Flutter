@@ -64,6 +64,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
             tasks: stack.tasks
                 .map((task) => Task(id: task.id, label: task.label))
                 .toList(),
+            isOptional: stack.isOptional,
           ),
         )
         .toList();
@@ -135,6 +136,16 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       final copy = [..._stacks];
       final item = copy.removeAt(index);
       copy.insert(newIndex, item);
+      _stacks = copy;
+    });
+  }
+
+  void _toggleStackOptional(String stackId, bool isOptional) {
+    final index = _stacks.indexWhere((stack) => stack.id == stackId);
+    if (index < 0) return;
+    setState(() {
+      final copy = [..._stacks];
+      copy[index] = copy[index].copyWith(isOptional: isOptional);
       _stacks = copy;
     });
   }
@@ -321,8 +332,11 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                     canRemove: _stacks.length > 1 ||
                         stack.tasks.isNotEmpty ||
                         stack.trimmedLabel.isNotEmpty,
+                    isOptional: stack.isOptional,
                     onLabelChanged: (value) =>
                         _renameStackLabel(stack.id, value),
+                    onOptionalChanged: (value) =>
+                        _toggleStackOptional(stack.id, value),
                     onMoveUp: () => _moveStack(index, -1),
                     onMoveDown: () => _moveStack(index, 1),
                     onRemove: () => _removeStack(stack.id),
@@ -401,7 +415,9 @@ class _StackEditorCard extends StatelessWidget {
   final bool canMoveUp;
   final bool canMoveDown;
   final bool canRemove;
+  final bool isOptional;
   final ValueChanged<String> onLabelChanged;
+  final ValueChanged<bool> onOptionalChanged;
   final VoidCallback onMoveUp;
   final VoidCallback onMoveDown;
   final VoidCallback onRemove;
@@ -420,7 +436,9 @@ class _StackEditorCard extends StatelessWidget {
     required this.canMoveUp,
     required this.canMoveDown,
     required this.canRemove,
+    required this.isOptional,
     required this.onLabelChanged,
+    required this.onOptionalChanged,
     required this.onMoveUp,
     required this.onMoveDown,
     required this.onRemove,
@@ -480,6 +498,26 @@ class _StackEditorCard extends StatelessWidget {
                 color: AppColors.light,
               ),
             ],
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: isOptional,
+            activeThumbColor: AppColors.highlight2,
+            title: const Text(
+              'Optional group',
+              style: TextStyle(
+                color: AppColors.light,
+                fontSize: AppSizes.textSub,
+              ),
+            ),
+            subtitle: const Text(
+              'Show a chooser for this group when creating a checklist.',
+              style: TextStyle(
+                color: AppColors.faint,
+                fontSize: AppSizes.textSub,
+              ),
+            ),
+            onChanged: onOptionalChanged,
           ),
           const SizedBox(height: AppSizes.xs),
           if (stack.tasks.isEmpty)

@@ -191,4 +191,107 @@ void main() {
       isTrue,
     );
   });
+
+  test('instantiating a template can exclude optional groups', () async {
+    final state = AppState();
+    final template = ChecklistTemplate(
+      id: 'template-5',
+      label: 'Trip prep',
+      favorite: false,
+      stacks: [
+        TaskStack(
+          id: 'stack-required',
+          label: 'Always',
+          tasks: [
+            Task(id: 'task-wallet', label: 'Wallet'),
+          ],
+        ),
+        TaskStack(
+          id: 'stack-optional',
+          label: 'Rainy weather',
+          isOptional: true,
+          tasks: [
+            Task(id: 'task-jacket', label: 'Rain jacket'),
+          ],
+        ),
+      ],
+    );
+
+    final checklist = state.instantiateTemplateWithSelectedOptionalGroups(
+      template,
+      selectedOptionalStackIds: const {},
+    );
+
+    expect(checklist.template.stacks.map((stack) => stack.id).toList(), [
+      'stack-required',
+    ]);
+    expect(
+      checklist.checkboxes.map((box) => box.taskId).toList(),
+      ['task-wallet'],
+    );
+  });
+
+  test('syncing an active checklist keeps omitted optional groups omitted',
+      () async {
+    final state = AppState();
+    final template = ChecklistTemplate(
+      id: 'template-6',
+      label: 'Trip prep',
+      favorite: false,
+      stacks: [
+        TaskStack(
+          id: 'stack-required',
+          label: 'Always',
+          tasks: [
+            Task(id: 'task-wallet', label: 'Wallet'),
+          ],
+        ),
+        TaskStack(
+          id: 'stack-optional',
+          label: 'Rainy weather',
+          isOptional: true,
+          tasks: [
+            Task(id: 'task-jacket', label: 'Rain jacket'),
+          ],
+        ),
+      ],
+    );
+
+    await state.saveTemplate(template);
+
+    final checklist = state.instantiateTemplateWithSelectedOptionalGroups(
+      template,
+      selectedOptionalStackIds: const {},
+    );
+    await state.saveChecklist(checklist);
+
+    final updatedTemplate = template.copyWith(
+      stacks: [
+        template.stacks.first.copyWith(
+          tasks: [
+            Task(id: 'task-wallet', label: 'House wallet'),
+            Task(id: 'task-phone', label: 'Phone'),
+          ],
+        ),
+        template.stacks.last.copyWith(
+          tasks: [
+            Task(id: 'task-jacket', label: 'Rain jacket'),
+            Task(id: 'task-cover', label: 'Bag cover'),
+          ],
+        ),
+      ],
+    );
+
+    await state.saveTemplate(updatedTemplate, syncActiveChecklists: true);
+
+    final syncedChecklist = state.checklists.single;
+
+    expect(syncedChecklist.template.stacks.map((stack) => stack.id).toList(), [
+      'stack-required',
+    ]);
+    expect(
+      syncedChecklist.checkboxes.map((box) => box.taskId).toList(),
+      ['task-wallet', 'task-phone'],
+    );
+  });
 }
