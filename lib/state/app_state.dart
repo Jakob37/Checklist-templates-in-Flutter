@@ -18,16 +18,31 @@ class AppState extends ChangeNotifier {
 
   // ── Template mutations ──────────────────────────────────────────────────────
 
-  Future<void> saveTemplate(ChecklistTemplate template) async {
-    await saveNewTemplates([template]);
+  Future<void> saveTemplate(
+    ChecklistTemplate template, {
+    bool syncActiveChecklists = false,
+  }) async {
+    await saveNewTemplates(
+      [template],
+      syncActiveChecklists: syncActiveChecklists,
+    );
   }
 
-  Future<void> saveNewTemplates(List<ChecklistTemplate> newTemplates) async {
+  Future<void> saveNewTemplates(
+    List<ChecklistTemplate> newTemplates, {
+    bool syncActiveChecklists = false,
+  }) async {
     final newIds = {for (final t in newTemplates) t.id};
     final kept = _templates.where((t) => !newIds.contains(t.id)).toList();
     kept.addAll(newTemplates);
     _templates = kept;
     await StorageService.saveTemplates(_templates);
+    if (syncActiveChecklists) {
+      for (final template in newTemplates) {
+        _syncActiveChecklistsForTemplate(template);
+      }
+      await StorageService.saveChecklists(_checklists);
+    }
     notifyListeners();
   }
 
@@ -127,6 +142,7 @@ class AppState extends ChangeNotifier {
       return stack.tasks.asMap().entries.map((e) {
         return Checkbox(
           id: generateId('checkbox-${e.key}'),
+          taskId: e.value.id,
           label: e.value.label,
           checked: CheckboxStatus.unchecked,
         );
@@ -173,4 +189,50 @@ class AppState extends ChangeNotifier {
           'Be present',
         ],
       );
+
+  void _syncActiveChecklistsForTemplate(ChecklistTemplate template) {
+    _checklists = _checklists.map((checklist) {
+      if (checklist.template.id != template.id) return checklist;
+      return _syncChecklistToTemplate(checklist, template);
+    }).toList();
+  }
+
+  Checklist _syncChecklistToTemplate(
+    Checklist checklist,
+    ChecklistTemplate template,
+  ) {
+    final checkboxByTaskId = <String, Checkbox>{};
+    final previousTasks =
+        checklist.template.stacks.expand((stack) => stack.tasks);
+
+    for (final entry in previousTasks.toList().asMap().entries) {
+      if (entry.key >= checklist.checkboxes.length) break;
+      checkboxByTaskId[entry.value.id] = checklist.checkboxes[entry.key];
+    }
+
+    for (final box in checklist.checkboxes) {
+      if (box.taskId != null) {
+        checkboxByTaskId[box.taskId!] = box;
+      }
+    }
+
+    final syncedCheckboxes =
+        template.stacks.expand((stack) => stack.tasks).map((task) {
+      final existing = checkboxByTaskId[task.id];
+      if (existing != null) {
+        return existing.copyWith(taskId: task.id, label: task.label);
+      }
+      return Checkbox(
+        id: generateId('checkbox'),
+        taskId: task.id,
+        label: task.label,
+        checked: CheckboxStatus.unchecked,
+      );
+    }).toList();
+
+    return checklist.copyWith(
+      template: template,
+      checkboxes: syncedCheckboxes,
+    );
+  }
 }

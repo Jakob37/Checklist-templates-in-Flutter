@@ -25,8 +25,13 @@ final GoRouter appRouter = GoRouter(
               builder: (context, state) {
                 final templateId = state.uri.queryParameters['templateId'];
                 final isNew = state.uri.queryParameters['isNew'] == 'true';
+                final syncActiveChecklists =
+                    state.uri.queryParameters['syncActiveChecklists'] == 'true';
                 return MakeTemplateScreen(
-                    templateId: templateId, isNew: isNew);
+                  templateId: templateId,
+                  isNew: isNew,
+                  syncActiveChecklists: syncActiveChecklists,
+                );
               },
             ),
           ],

@@ -19,6 +19,12 @@ class TaskStack {
 
   TaskStack({required this.id, required this.label, required this.tasks});
 
+  TaskStack copyWith({String? label, List<Task>? tasks}) => TaskStack(
+        id: id,
+        label: label ?? this.label,
+        tasks: tasks ?? this.tasks,
+      );
+
   factory TaskStack.fromJson(Map<String, dynamic> json) => TaskStack(
         id: json['id'] as String,
         label: json['label'] as String,
@@ -47,10 +53,15 @@ class ChecklistTemplate {
     required this.favorite,
   });
 
-  ChecklistTemplate copyWith({bool? favorite}) => ChecklistTemplate(
+  ChecklistTemplate copyWith({
+    String? label,
+    List<TaskStack>? stacks,
+    bool? favorite,
+  }) =>
+      ChecklistTemplate(
         id: id,
-        label: label,
-        stacks: stacks,
+        label: label ?? this.label,
+        stacks: stacks ?? this.stacks,
         favorite: favorite ?? this.favorite,
       );
 

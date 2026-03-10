@@ -5,22 +5,39 @@ enum CheckboxStatus { checked, unchecked, removed }
 
 class Checkbox {
   final String id;
+  final String? taskId;
   final String label;
   final CheckboxStatus checked;
 
-  Checkbox({required this.id, required this.label, required this.checked});
+  Checkbox({
+    required this.id,
+    this.taskId,
+    required this.label,
+    required this.checked,
+  });
 
-  Checkbox copyWith({CheckboxStatus? checked}) =>
-      Checkbox(id: id, label: label, checked: checked ?? this.checked);
+  Checkbox copyWith({
+    String? taskId,
+    String? label,
+    CheckboxStatus? checked,
+  }) =>
+      Checkbox(
+        id: id,
+        taskId: taskId ?? this.taskId,
+        label: label ?? this.label,
+        checked: checked ?? this.checked,
+      );
 
   factory Checkbox.fromJson(Map<String, dynamic> json) => Checkbox(
         id: json['id'] as String,
+        taskId: json['taskId'] as String?,
         label: json['label'] as String,
         checked: CheckboxStatus.values[json['checked'] as int],
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'taskId': taskId,
         'label': label,
         'checked': checked.index,
       };
@@ -39,9 +56,13 @@ class Checklist {
     required this.timecreated,
   });
 
-  Checklist copyWith({List<Checkbox>? checkboxes}) => Checklist(
+  Checklist copyWith({
+    ChecklistTemplate? template,
+    List<Checkbox>? checkboxes,
+  }) =>
+      Checklist(
         id: id,
-        template: template,
+        template: template ?? this.template,
         checkboxes: checkboxes ?? this.checkboxes,
         timecreated: timecreated,
       );

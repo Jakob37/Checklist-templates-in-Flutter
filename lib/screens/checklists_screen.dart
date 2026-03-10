@@ -29,8 +29,7 @@ class ChecklistsScreen extends StatelessWidget {
                 const Text(
                   'Currently no active checklists',
                   style: TextStyle(
-                      color: AppColors.light,
-                      fontSize: AppSizes.textMajor),
+                      color: AppColors.light, fontSize: AppSizes.textMajor),
                 ),
                 const SizedBox(height: AppSizes.s),
                 ElevatedButton(
@@ -43,8 +42,7 @@ class ChecklistsScreen extends StatelessWidget {
               ],
             ),
           ),
-        ...sorted.map((checklist) =>
-            _ChecklistItem(checklist: checklist)),
+        ...sorted.map((checklist) => _ChecklistItem(checklist: checklist)),
         const SizedBox(height: AppSizes.s),
       ],
     );
@@ -64,8 +62,8 @@ class _ChecklistItem extends StatelessWidget {
       children: [
         // Header
         BluePanel(
-          margin: const EdgeInsets.fromLTRB(
-              AppSizes.s, AppSizes.s, AppSizes.s, 0),
+          margin:
+              const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -76,11 +74,26 @@ class _ChecklistItem extends StatelessWidget {
                     fontSize: AppSizes.textMinor,
                     fontWeight: FontWeight.bold),
               ),
-              IconButton(
-                onPressed: () =>
-                    context.read<AppState>().removeChecklist(checklist.id),
-                icon: const FaIcon(FontAwesomeIcons.trash,
-                    size: AppSizes.iconMedium, color: AppColors.light),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => context.push(
+                      '/templates/edit?templateId=${checklist.template.id}&isNew=false&syncActiveChecklists=true',
+                    ),
+                    icon: const FaIcon(
+                      FontAwesomeIcons.pen,
+                      size: AppSizes.iconMedium,
+                      color: AppColors.light,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        context.read<AppState>().removeChecklist(checklist.id),
+                    icon: const FaIcon(FontAwesomeIcons.trash,
+                        size: AppSizes.iconMedium, color: AppColors.light),
+                  ),
+                ],
               ),
             ],
           ),
@@ -88,8 +101,8 @@ class _ChecklistItem extends StatelessWidget {
 
         // Checkboxes
         BluePanel(
-          margin: const EdgeInsets.fromLTRB(
-              AppSizes.s, AppSizes.xs, AppSizes.s, 0),
+          margin:
+              const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.xs, AppSizes.s, 0),
           child: Column(
             children: checklist.checkboxes.asMap().entries.map((e) {
               final i = e.key;
@@ -115,13 +128,10 @@ class _ChecklistItem extends StatelessWidget {
                       Text(
                         box.label,
                         style: TextStyle(
-                          color: isChecked
-                              ? AppColors.faint
-                              : AppColors.light,
+                          color: isChecked ? AppColors.faint : AppColors.light,
                           fontSize: AppSizes.textSub,
-                          decoration: isChecked
-                              ? TextDecoration.lineThrough
-                              : null,
+                          decoration:
+                              isChecked ? TextDecoration.lineThrough : null,
                         ),
                       ),
                     ],
@@ -135,8 +145,7 @@ class _ChecklistItem extends StatelessWidget {
         // Done bar
         if (isDone)
           GestureDetector(
-            onTap: () =>
-                context.read<AppState>().removeChecklist(checklist.id),
+            onTap: () => context.read<AppState>().removeChecklist(checklist.id),
             child: Container(
               margin: const EdgeInsets.fromLTRB(
                   AppSizes.s, AppSizes.s, AppSizes.s, 0),
@@ -154,8 +163,7 @@ class _ChecklistItem extends StatelessWidget {
                   Text(
                     'Done',
                     style: TextStyle(
-                        fontSize: AppSizes.textMajor,
-                        color: AppColors.white),
+                        fontSize: AppSizes.textMajor, color: AppColors.white),
                   ),
                 ],
               ),

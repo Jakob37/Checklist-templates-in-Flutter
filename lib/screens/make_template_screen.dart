@@ -12,8 +12,14 @@ import '../widgets/blue_panel.dart';
 class MakeTemplateScreen extends StatefulWidget {
   final String? templateId;
   final bool isNew;
+  final bool syncActiveChecklists;
 
-  const MakeTemplateScreen({super.key, this.templateId, required this.isNew});
+  const MakeTemplateScreen({
+    super.key,
+    this.templateId,
+    required this.isNew,
+    this.syncActiveChecklists = false,
+  });
 
   @override
   State<MakeTemplateScreen> createState() => _MakeTemplateScreenState();
@@ -25,6 +31,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   final Map<String, FocusNode> _taskFocusNodes = {};
 
   late String _templateId;
+  late String _stackId;
   bool _isFavorite = false;
   List<Task> _tasks = [];
 
@@ -32,6 +39,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   void initState() {
     super.initState();
     _templateId = generateId('template');
+    _stackId = generateId('stack');
     _loadTemplate();
   }
 
@@ -44,6 +52,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
     final state = context.read<AppState>();
     final template = state.getTemplateById(id);
     _templateId = template.id;
+    _stackId = template.stacks.first.id;
     _isFavorite = template.favorite;
     _nameController.text = template.label;
     _tasks = template.stacks.expand((s) => s.tasks).toList();
@@ -54,6 +63,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
 
   void _reset() {
     _templateId = generateId('template');
+    _stackId = generateId('stack');
     _isFavorite = false;
     _nameController.clear();
     for (final fn in _taskFocusNodes.values) {
@@ -74,8 +84,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   }
 
   bool get _saveActive =>
-      _nameController.text.isNotEmpty &&
-      _tasks.any((t) => t.label.isNotEmpty);
+      _nameController.text.isNotEmpty && _tasks.any((t) => t.label.isNotEmpty);
 
   void _addTask() {
     final taskId = generateId('task');
@@ -106,13 +115,26 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
 
   Future<void> _save() async {
     final state = context.read<AppState>();
-    final template = state.buildTemplate(
-      templateId: _templateId,
-      templateName: _nameController.text,
-      isFavorite: _isFavorite,
-      taskLabels: _tasks.map((t) => t.label).toList(),
+    final tasks = _tasks
+        .where((task) => task.label.trim().isNotEmpty)
+        .map((task) => task.copyWith(label: task.label.trim()))
+        .toList();
+    final template = ChecklistTemplate(
+      id: _templateId,
+      label: _nameController.text.trim(),
+      favorite: _isFavorite,
+      stacks: [
+        TaskStack(
+          id: _stackId,
+          label: 'default',
+          tasks: tasks,
+        ),
+      ],
     );
-    await state.saveTemplate(template);
+    await state.saveTemplate(
+      template,
+      syncActiveChecklists: widget.syncActiveChecklists,
+    );
     if (mounted) context.pop();
   }
 
@@ -185,8 +207,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                   SizedBox(width: AppSizes.s),
                   Text('Add task',
                       style: TextStyle(
-                          color: AppColors.light,
-                          fontSize: AppSizes.textSub)),
+                          color: AppColors.light, fontSize: AppSizes.textSub)),
                 ],
               ),
             ),
@@ -208,17 +229,15 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                 children: [
                   FaIcon(FontAwesomeIcons.floppyDisk,
                       size: AppSizes.iconMedium,
-                      color: _saveActive
-                          ? AppColors.white
-                          : AppColors.light),
+                      color: _saveActive ? AppColors.white : AppColors.light),
                   const SizedBox(width: AppSizes.s),
                   Text(
-                    'Save template',
+                    widget.syncActiveChecklists
+                        ? 'Save template and checklist'
+                        : 'Save template',
                     style: TextStyle(
                         fontSize: AppSizes.textMajor,
-                        color: _saveActive
-                            ? AppColors.white
-                            : AppColors.light),
+                        color: _saveActive ? AppColors.white : AppColors.light),
                   ),
                 ],
               ),
