@@ -28,18 +28,17 @@ class MakeTemplateScreen extends StatefulWidget {
 class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   final _nameController = TextEditingController();
   final _nameFocusNode = FocusNode();
+  final Map<String, FocusNode> _stackFocusNodes = {};
   final Map<String, FocusNode> _taskFocusNodes = {};
 
   late String _templateId;
-  late String _stackId;
   bool _isFavorite = false;
-  List<Task> _tasks = [];
+  List<TaskStack> _stacks = [];
 
   @override
   void initState() {
     super.initState();
     _templateId = generateId('template');
-    _stackId = generateId('stack');
     _loadTemplate();
   }
 
@@ -49,92 +48,233 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       _reset();
       return;
     }
+
     final state = context.read<AppState>();
     final template = state.getTemplateById(id);
+
+    _disposeFocusNodes();
     _templateId = template.id;
-    _stackId = template.stacks.first.id;
     _isFavorite = template.favorite;
     _nameController.text = template.label;
-    _tasks = template.stacks.expand((s) => s.tasks).toList();
-    for (final task in _tasks) {
-      _taskFocusNodes[task.id] = FocusNode();
+    _stacks = template.stacks
+        .map(
+          (stack) => TaskStack(
+            id: stack.id,
+            label: stack.hasVisibleLabel ? stack.trimmedLabel : '',
+            tasks: stack.tasks
+                .map((task) => Task(id: task.id, label: task.label))
+                .toList(),
+          ),
+        )
+        .toList();
+
+    if (_stacks.isEmpty) {
+      _stacks = [_buildEmptyStack()];
+    }
+
+    for (final stack in _stacks) {
+      _stackFocusNodes[stack.id] = FocusNode();
+      for (final task in stack.tasks) {
+        _taskFocusNodes[task.id] = FocusNode();
+      }
     }
   }
 
   void _reset() {
+    _disposeFocusNodes();
     _templateId = generateId('template');
-    _stackId = generateId('stack');
     _isFavorite = false;
     _nameController.clear();
+    _stacks = [_buildEmptyStack()];
+  }
+
+  TaskStack _buildEmptyStack() => TaskStack(
+        id: generateId('stack'),
+        label: '',
+        tasks: [],
+      );
+
+  void _disposeFocusNodes() {
+    for (final fn in _stackFocusNodes.values) {
+      fn.dispose();
+    }
     for (final fn in _taskFocusNodes.values) {
       fn.dispose();
     }
+    _stackFocusNodes.clear();
     _taskFocusNodes.clear();
-    _tasks = [];
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _nameFocusNode.dispose();
-    for (final fn in _taskFocusNodes.values) {
-      fn.dispose();
-    }
+    _disposeFocusNodes();
     super.dispose();
   }
 
   bool get _saveActive =>
-      _nameController.text.isNotEmpty && _tasks.any((t) => t.label.isNotEmpty);
+      _nameController.text.trim().isNotEmpty &&
+      _stacks.any(
+          (stack) => stack.tasks.any((task) => task.label.trim().isNotEmpty));
 
-  void _addTask() {
+  void _renameStackLabel(String stackId, String label) {
+    final index = _stacks.indexWhere((stack) => stack.id == stackId);
+    if (index < 0) return;
+    setState(() {
+      final copy = [..._stacks];
+      copy[index] = copy[index].copyWith(label: label);
+      _stacks = copy;
+    });
+  }
+
+  void _moveStack(int index, int offset) {
+    final newIndex = index + offset;
+    if (newIndex < 0 || newIndex >= _stacks.length) return;
+    setState(() {
+      final copy = [..._stacks];
+      final item = copy.removeAt(index);
+      copy.insert(newIndex, item);
+      _stacks = copy;
+    });
+  }
+
+  void _addStack({String? afterStackId}) {
+    final newStack = _buildEmptyStack();
+    _stackFocusNodes[newStack.id] = FocusNode();
+
+    setState(() {
+      final copy = [..._stacks];
+      final insertIndex = afterStackId == null
+          ? copy.length
+          : copy.indexWhere((stack) => stack.id == afterStackId) + 1;
+      if (insertIndex <= 0 || insertIndex > copy.length) {
+        copy.add(newStack);
+      } else {
+        copy.insert(insertIndex, newStack);
+      }
+      _stacks = copy;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _stackFocusNodes[newStack.id]?.requestFocus();
+    });
+  }
+
+  void _removeStack(String stackId) {
+    final stackIndex = _stacks.indexWhere((entry) => entry.id == stackId);
+    if (stackIndex < 0) return;
+    final stack = _stacks[stackIndex];
+
+    _stackFocusNodes.remove(stackId)?.dispose();
+    for (final task in stack.tasks) {
+      _taskFocusNodes.remove(task.id)?.dispose();
+    }
+
+    setState(() {
+      final remaining = _stacks.where((entry) => entry.id != stackId).toList();
+      _stacks = remaining.isEmpty ? [_buildEmptyStack()] : remaining;
+      if (_stacks.length == 1) {
+        _stackFocusNodes.putIfAbsent(_stacks.first.id, FocusNode.new);
+      }
+    });
+  }
+
+  void _addTask(String stackId) {
     final taskId = generateId('task');
     _taskFocusNodes[taskId] = FocusNode();
+
     setState(() {
-      _tasks = [..._tasks, Task(id: taskId, label: '')];
+      _stacks = _stacks.map((stack) {
+        if (stack.id != stackId) return stack;
+        return stack.copyWith(
+          tasks: [...stack.tasks, Task(id: taskId, label: '')],
+        );
+      }).toList();
     });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _taskFocusNodes[taskId]?.requestFocus();
     });
   }
 
-  void _removeTask(String id) {
-    _taskFocusNodes[id]?.dispose();
-    _taskFocusNodes.remove(id);
+  void _renameTask(String stackId, String taskId, String label) {
+    final stackIndex = _stacks.indexWhere((stack) => stack.id == stackId);
+    if (stackIndex < 0) return;
+
+    final taskIndex =
+        _stacks[stackIndex].tasks.indexWhere((task) => task.id == taskId);
+    if (taskIndex < 0) return;
+
     setState(() {
-      _tasks = _tasks.where((t) => t.id != id).toList();
+      final updatedStacks = [..._stacks];
+      final updatedTasks = [...updatedStacks[stackIndex].tasks];
+      updatedTasks[taskIndex] = updatedTasks[taskIndex].copyWith(label: label);
+      updatedStacks[stackIndex] =
+          updatedStacks[stackIndex].copyWith(tasks: updatedTasks);
+      _stacks = updatedStacks;
     });
   }
 
-  void _renameTask(String id, String label) {
-    final idx = _tasks.indexWhere((t) => t.id == id);
-    if (idx < 0) return;
-    final copy = [..._tasks];
-    copy[idx] = copy[idx].copyWith(label: label);
-    _tasks = copy;
+  void _removeTask(String stackId, String taskId) {
+    _taskFocusNodes.remove(taskId)?.dispose();
+
+    setState(() {
+      _stacks = _stacks.map((stack) {
+        if (stack.id != stackId) return stack;
+        return stack.copyWith(
+          tasks: stack.tasks.where((task) => task.id != taskId).toList(),
+        );
+      }).toList();
+    });
+  }
+
+  void _moveTask(String stackId, int index, int offset) {
+    final stackIndex = _stacks.indexWhere((stack) => stack.id == stackId);
+    if (stackIndex < 0) return;
+
+    final tasks = _stacks[stackIndex].tasks;
+    final newIndex = index + offset;
+    if (newIndex < 0 || newIndex >= tasks.length) return;
+
+    setState(() {
+      final updatedStacks = [..._stacks];
+      final updatedTasks = [...tasks];
+      final task = updatedTasks.removeAt(index);
+      updatedTasks.insert(newIndex, task);
+      updatedStacks[stackIndex] =
+          updatedStacks[stackIndex].copyWith(tasks: updatedTasks);
+      _stacks = updatedStacks;
+    });
   }
 
   Future<void> _save() async {
     final state = context.read<AppState>();
-    final tasks = _tasks
-        .where((task) => task.label.trim().isNotEmpty)
-        .map((task) => task.copyWith(label: task.label.trim()))
+    final stacks = _stacks
+        .map(
+          (stack) => stack.copyWith(
+            label: stack.trimmedLabel,
+            tasks: stack.tasks
+                .where((task) => task.label.trim().isNotEmpty)
+                .map((task) => task.copyWith(label: task.label.trim()))
+                .toList(),
+          ),
+        )
+        .where((stack) => stack.tasks.isNotEmpty)
         .toList();
+
     final template = ChecklistTemplate(
       id: _templateId,
       label: _nameController.text.trim(),
       favorite: _isFavorite,
-      stacks: [
-        TaskStack(
-          id: _stackId,
-          label: 'default',
-          tasks: tasks,
-        ),
-      ],
+      stacks: stacks,
     );
+
     await state.saveTemplate(
       template,
       syncActiveChecklists: widget.syncActiveChecklists,
     );
+
     if (mounted) context.pop();
   }
 
@@ -143,7 +283,6 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Name input
           BluePanel(
             margin: const EdgeInsets.fromLTRB(
                 AppSizes.s, AppSizes.s, AppSizes.s, 0),
@@ -160,60 +299,66 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-
-          // Task list
           Expanded(
-            child: BluePanel(
-              margin: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.s, vertical: AppSizes.s),
-              child: ReorderableListView.builder(
-                shrinkWrap: true,
-                buildDefaultDragHandles: false,
-                itemCount: _tasks.length,
-                itemBuilder: (context, index) {
-                  final task = _tasks[index];
-                  if (!_taskFocusNodes.containsKey(task.id)) {
-                    _taskFocusNodes[task.id] = FocusNode();
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.s),
+              children: [
+                ..._stacks.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final stack = entry.value;
+                  _stackFocusNodes.putIfAbsent(stack.id, FocusNode.new);
+                  for (final task in stack.tasks) {
+                    _taskFocusNodes.putIfAbsent(task.id, FocusNode.new);
                   }
-                  return _TaskRow(
-                    key: ValueKey(task.id),
-                    index: index,
-                    task: task,
-                    focusNode: _taskFocusNodes[task.id]!,
-                    onChanged: (text) => _renameTask(task.id, text),
-                    onRemove: () => _removeTask(task.id),
+
+                  return _StackEditorCard(
+                    key: ValueKey(stack.id),
+                    stack: stack,
+                    stackFocusNode: _stackFocusNodes[stack.id]!,
+                    taskFocusNodes: _taskFocusNodes,
+                    canMoveUp: index > 0,
+                    canMoveDown: index < _stacks.length - 1,
+                    canRemove: _stacks.length > 1 ||
+                        stack.tasks.isNotEmpty ||
+                        stack.trimmedLabel.isNotEmpty,
+                    onLabelChanged: (value) =>
+                        _renameStackLabel(stack.id, value),
+                    onMoveUp: () => _moveStack(index, -1),
+                    onMoveDown: () => _moveStack(index, 1),
+                    onRemove: () => _removeStack(stack.id),
+                    onAddTask: () => _addTask(stack.id),
+                    onAddGroupAfter: () => _addStack(afterStackId: stack.id),
+                    onTaskChanged: (taskId, value) =>
+                        _renameTask(stack.id, taskId, value),
+                    onTaskRemove: (taskId) => _removeTask(stack.id, taskId),
+                    onTaskMoveUp: (taskIndex) =>
+                        _moveTask(stack.id, taskIndex, -1),
+                    onTaskMoveDown: (taskIndex) =>
+                        _moveTask(stack.id, taskIndex, 1),
                   );
-                },
-                onReorder: (oldIndex, newIndex) {
-                  setState(() {
-                    if (newIndex > oldIndex) newIndex--;
-                    final item = _tasks.removeAt(oldIndex);
-                    _tasks.insert(newIndex, item);
-                  });
-                },
-              ),
+                }),
+                BluePanel(
+                  margin: const EdgeInsets.symmetric(horizontal: AppSizes.s),
+                  child: GestureDetector(
+                    onTap: _addStack,
+                    child: const Row(
+                      children: [
+                        FaIcon(FontAwesomeIcons.layerGroup,
+                            size: AppSizes.iconMedium, color: AppColors.light),
+                        SizedBox(width: AppSizes.s),
+                        Text(
+                          'Add checkbox group',
+                          style: TextStyle(
+                              color: AppColors.light,
+                              fontSize: AppSizes.textSub),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          // Add task
-          BluePanel(
-            margin: const EdgeInsets.symmetric(horizontal: AppSizes.s),
-            child: GestureDetector(
-              onTap: _addTask,
-              child: const Row(
-                children: [
-                  FaIcon(FontAwesomeIcons.plus,
-                      size: AppSizes.iconMedium, color: AppColors.light),
-                  SizedBox(width: AppSizes.s),
-                  Text('Add task',
-                      style: TextStyle(
-                          color: AppColors.light, fontSize: AppSizes.textSub)),
-                ],
-              ),
-            ),
-          ),
-
-          // Save button
           GestureDetector(
             onTap: _saveActive ? _save : null,
             child: Container(
@@ -249,19 +394,184 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   }
 }
 
+class _StackEditorCard extends StatelessWidget {
+  final TaskStack stack;
+  final FocusNode stackFocusNode;
+  final Map<String, FocusNode> taskFocusNodes;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final bool canRemove;
+  final ValueChanged<String> onLabelChanged;
+  final VoidCallback onMoveUp;
+  final VoidCallback onMoveDown;
+  final VoidCallback onRemove;
+  final VoidCallback onAddTask;
+  final VoidCallback onAddGroupAfter;
+  final void Function(String taskId, String value) onTaskChanged;
+  final ValueChanged<String> onTaskRemove;
+  final ValueChanged<int> onTaskMoveUp;
+  final ValueChanged<int> onTaskMoveDown;
+
+  const _StackEditorCard({
+    super.key,
+    required this.stack,
+    required this.stackFocusNode,
+    required this.taskFocusNodes,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.canRemove,
+    required this.onLabelChanged,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onRemove,
+    required this.onAddTask,
+    required this.onAddGroupAfter,
+    required this.onTaskChanged,
+    required this.onTaskRemove,
+    required this.onTaskMoveUp,
+    required this.onTaskMoveDown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BluePanel(
+      margin: const EdgeInsets.fromLTRB(AppSizes.s, 0, AppSizes.s, AppSizes.s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.layerGroup,
+                size: AppSizes.iconMedium,
+                color: AppColors.light,
+              ),
+              const SizedBox(width: AppSizes.s),
+              Expanded(
+                child: TextFormField(
+                  key: ValueKey('stack-${stack.id}'),
+                  focusNode: stackFocusNode,
+                  initialValue: stack.label,
+                  style: const TextStyle(color: AppColors.light),
+                  decoration: const InputDecoration(
+                    hintText: 'Group label (optional)',
+                    hintStyle: TextStyle(color: AppColors.faint),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: onLabelChanged,
+                ),
+              ),
+              IconButton(
+                onPressed: canMoveUp ? onMoveUp : null,
+                icon: const FaIcon(FontAwesomeIcons.arrowUp,
+                    size: AppSizes.iconMedium),
+                color: AppColors.light,
+              ),
+              IconButton(
+                onPressed: canMoveDown ? onMoveDown : null,
+                icon: const FaIcon(FontAwesomeIcons.arrowDown,
+                    size: AppSizes.iconMedium),
+                color: AppColors.light,
+              ),
+              IconButton(
+                onPressed: canRemove ? onRemove : null,
+                icon: const FaIcon(FontAwesomeIcons.trash,
+                    size: AppSizes.iconMedium),
+                color: AppColors.light,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.xs),
+          if (stack.tasks.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(bottom: AppSizes.s),
+              child: Text(
+                'No checkboxes in this group yet.',
+                style: TextStyle(
+                    color: AppColors.faint, fontSize: AppSizes.textSub),
+              ),
+            ),
+          ...stack.tasks.asMap().entries.map((entry) {
+            final index = entry.key;
+            final task = entry.value;
+            final focusNode = taskFocusNodes[task.id]!;
+
+            return _TaskRow(
+              key: ValueKey(task.id),
+              task: task,
+              focusNode: focusNode,
+              canMoveUp: index > 0,
+              canMoveDown: index < stack.tasks.length - 1,
+              onChanged: (value) => onTaskChanged(task.id, value),
+              onMoveUp: () => onTaskMoveUp(index),
+              onMoveDown: () => onTaskMoveDown(index),
+              onRemove: () => onTaskRemove(task.id),
+            );
+          }),
+          const SizedBox(height: AppSizes.xs),
+          Wrap(
+            spacing: AppSizes.s,
+            runSpacing: AppSizes.xs,
+            children: [
+              GestureDetector(
+                onTap: onAddTask,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(FontAwesomeIcons.plus,
+                        size: AppSizes.iconMedium, color: AppColors.light),
+                    SizedBox(width: AppSizes.xs),
+                    Text(
+                      'Add checkbox',
+                      style: TextStyle(
+                          color: AppColors.light, fontSize: AppSizes.textSub),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: onAddGroupAfter,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(FontAwesomeIcons.plus,
+                        size: AppSizes.iconMedium, color: AppColors.light),
+                    SizedBox(width: AppSizes.xs),
+                    Text(
+                      'Add group below',
+                      style: TextStyle(
+                          color: AppColors.light, fontSize: AppSizes.textSub),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TaskRow extends StatelessWidget {
-  final int index;
   final Task task;
   final FocusNode focusNode;
+  final bool canMoveUp;
+  final bool canMoveDown;
   final ValueChanged<String> onChanged;
+  final VoidCallback onMoveUp;
+  final VoidCallback onMoveDown;
   final VoidCallback onRemove;
 
   const _TaskRow({
     super.key,
-    required this.index,
     required this.task,
     required this.focusNode,
+    required this.canMoveUp,
+    required this.canMoveDown,
     required this.onChanged,
+    required this.onMoveUp,
+    required this.onMoveDown,
     required this.onRemove,
   });
 
@@ -269,27 +579,36 @@ class _TaskRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        ReorderableDragStartListener(
-          index: index,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSizes.s),
-            child: FaIcon(FontAwesomeIcons.bars,
-                size: AppSizes.iconMedium, color: AppColors.light),
-          ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSizes.xs),
+          child: FaIcon(FontAwesomeIcons.squareCheck,
+              size: AppSizes.iconMedium, color: AppColors.light),
         ),
         Expanded(
-          child: TextField(
+          child: TextFormField(
+            key: ValueKey('task-${task.id}'),
             focusNode: focusNode,
-            controller: TextEditingController(text: task.label)
-              ..selection = TextSelection.collapsed(offset: task.label.length),
+            initialValue: task.label,
             style: const TextStyle(color: AppColors.light),
             decoration: const InputDecoration(
-              hintText: 'Enter your task...',
+              hintText: 'Enter checkbox label',
               hintStyle: TextStyle(color: AppColors.faint),
               border: InputBorder.none,
             ),
             onChanged: onChanged,
           ),
+        ),
+        IconButton(
+          onPressed: canMoveUp ? onMoveUp : null,
+          icon:
+              const FaIcon(FontAwesomeIcons.arrowUp, size: AppSizes.iconMedium),
+          color: AppColors.light,
+        ),
+        IconButton(
+          onPressed: canMoveDown ? onMoveDown : null,
+          icon: const FaIcon(FontAwesomeIcons.arrowDown,
+              size: AppSizes.iconMedium),
+          color: AppColors.light,
         ),
         IconButton(
           onPressed: onRemove,

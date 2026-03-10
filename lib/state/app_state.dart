@@ -111,6 +111,7 @@ class AppState extends ChangeNotifier {
       final reset = checklist.checkboxes
           .map((b) => Checkbox(
                 id: b.id,
+                taskId: b.taskId,
                 label: b.label,
                 checked: CheckboxStatus.unchecked,
               ))
@@ -150,7 +151,7 @@ class AppState extends ChangeNotifier {
 
     final stack = TaskStack(
       id: generateId('stack-1'),
-      label: 'default',
+      label: '',
       tasks: tasks,
     );
 
@@ -164,11 +165,11 @@ class AppState extends ChangeNotifier {
 
   Checklist instantiateTemplate(ChecklistTemplate template) {
     final checkboxes = template.stacks.expand((stack) {
-      return stack.tasks.asMap().entries.map((e) {
+      return stack.tasks.map((task) {
         return Checkbox(
-          id: generateId('checkbox-${e.key}'),
-          taskId: e.value.id,
-          label: e.value.label,
+          id: generateId('checkbox'),
+          taskId: task.id,
+          label: task.label,
           checked: CheckboxStatus.unchecked,
         );
       });

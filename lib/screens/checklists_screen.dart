@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Checkbox;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -53,10 +53,47 @@ class _ChecklistItem extends StatelessWidget {
   final Checklist checklist;
   const _ChecklistItem({required this.checklist});
 
+  List<_ChecklistSection> _buildSections() {
+    final checkboxByTaskId = <String, Checkbox>{};
+    for (final box in checklist.checkboxes) {
+      final taskId = box.taskId;
+      if (taskId != null) {
+        checkboxByTaskId[taskId] = box;
+      }
+    }
+
+    var fallbackIndex = 0;
+
+    return checklist.template.stacks
+        .map((stack) {
+          final boxes = <Checkbox>[];
+
+          for (final task in stack.tasks) {
+            final box = checkboxByTaskId[task.id] ??
+                (fallbackIndex < checklist.checkboxes.length
+                    ? checklist.checkboxes[fallbackIndex]
+                    : null);
+            fallbackIndex++;
+
+            if (box != null) {
+              boxes.add(box);
+            }
+          }
+
+          return _ChecklistSection(
+            label: stack.hasVisibleLabel ? stack.trimmedLabel : null,
+            boxes: boxes,
+          );
+        })
+        .where((section) => section.boxes.isNotEmpty)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final isDone = state.isChecklistDone(checklist.id);
+    final sections = _buildSections();
 
     return Column(
       children: [
@@ -104,40 +141,78 @@ class _ChecklistItem extends StatelessWidget {
           margin:
               const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.xs, AppSizes.s, 0),
           child: Column(
-            children: checklist.checkboxes.asMap().entries.map((e) {
-              final i = e.key;
-              final box = e.value;
-              final isChecked = box.checked == CheckboxStatus.checked;
-              return Padding(
-                padding: EdgeInsets.only(top: i != 0 ? AppSizes.s : 0),
-                child: GestureDetector(
-                  onTap: () => context
-                      .read<AppState>()
-                      .toggleCheck(checklist.id, box.id),
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: [
-                      FaIcon(
-                        isChecked
-                            ? FontAwesomeIcons.solidSquareCheck
-                            : FontAwesomeIcons.square,
-                        size: AppSizes.iconMedium,
-                        color: AppColors.light,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: sections.asMap().entries.expand((entry) {
+              final sectionIndex = entry.key;
+              final section = entry.value;
+              final widgets = <Widget>[];
+
+              if (sectionIndex > 0) {
+                widgets.add(const SizedBox(height: AppSizes.m));
+              }
+
+              if (section.label != null) {
+                widgets.add(
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSizes.xs),
+                    child: Text(
+                      section.label!,
+                      style: const TextStyle(
+                        color: AppColors.faint,
+                        fontSize: AppSizes.textSub,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: AppSizes.s),
-                      Text(
-                        box.label,
-                        style: TextStyle(
-                          color: isChecked ? AppColors.faint : AppColors.light,
-                          fontSize: AppSizes.textSub,
-                          decoration:
-                              isChecked ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                );
+              }
+
+              widgets.addAll(
+                section.boxes.asMap().entries.map((boxEntry) {
+                  final boxIndex = boxEntry.key;
+                  final box = boxEntry.value;
+                  final isChecked = box.checked == CheckboxStatus.checked;
+
+                  return Padding(
+                    padding:
+                        EdgeInsets.only(top: boxIndex != 0 ? AppSizes.s : 0),
+                    child: GestureDetector(
+                      onTap: () => context
+                          .read<AppState>()
+                          .toggleCheck(checklist.id, box.id),
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        children: [
+                          FaIcon(
+                            isChecked
+                                ? FontAwesomeIcons.solidSquareCheck
+                                : FontAwesomeIcons.square,
+                            size: AppSizes.iconMedium,
+                            color: AppColors.light,
+                          ),
+                          const SizedBox(width: AppSizes.s),
+                          Expanded(
+                            child: Text(
+                              box.label,
+                              style: TextStyle(
+                                color: isChecked
+                                    ? AppColors.faint
+                                    : AppColors.light,
+                                fontSize: AppSizes.textSub,
+                                decoration: isChecked
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
               );
+
+              return widgets;
             }).toList(),
           ),
         ),
@@ -173,4 +248,11 @@ class _ChecklistItem extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ChecklistSection {
+  final String? label;
+  final List<Checkbox> boxes;
+
+  const _ChecklistSection({required this.label, required this.boxes});
 }

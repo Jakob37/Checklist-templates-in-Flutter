@@ -19,6 +19,10 @@ class TaskStack {
 
   TaskStack({required this.id, required this.label, required this.tasks});
 
+  String get trimmedLabel => label.trim();
+  bool get hasVisibleLabel =>
+      trimmedLabel.isNotEmpty && trimmedLabel.toLowerCase() != 'default';
+
   TaskStack copyWith({String? label, List<Task>? tasks}) => TaskStack(
         id: id,
         label: label ?? this.label,
@@ -81,4 +85,7 @@ class ChecklistTemplate {
         'stacks': stacks.map((s) => s.toJson()).toList(),
         'favorite': favorite,
       };
+
+  int get taskCount =>
+      stacks.fold(0, (count, stack) => count + stack.tasks.length);
 }

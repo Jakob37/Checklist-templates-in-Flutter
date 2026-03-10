@@ -163,7 +163,7 @@ class _TemplateCard extends StatelessWidget {
                         color: AppColors.light, fontSize: AppSizes.textMinor),
                   ),
                   Text(
-                    '${template.stacks[0].tasks.length} tasks • completed $completionCount ${completionCount == 1 ? 'time' : 'times'}',
+                    '${template.taskCount} tasks • completed $completionCount ${completionCount == 1 ? 'time' : 'times'}',
                     style: const TextStyle(
                         color: AppColors.faint, fontSize: AppSizes.textSub),
                   ),

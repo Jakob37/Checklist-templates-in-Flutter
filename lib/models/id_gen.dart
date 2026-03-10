@@ -1,3 +1,6 @@
+int _idCounter = 0;
+
 String generateId(String type) {
-  return '$type-${DateTime.now().millisecondsSinceEpoch}';
+  _idCounter++;
+  return '$type-${DateTime.now().microsecondsSinceEpoch}-$_idCounter';
 }

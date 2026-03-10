@@ -29,16 +29,28 @@ class ViewTemplateWidget extends StatelessWidget {
         ...template.stacks.map((stack) => BluePanel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: stack.tasks
-                    .map((task) => Padding(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: AppSizes.xs),
-                          child: Text(task.label,
-                              style: const TextStyle(
-                                  color: AppColors.light,
-                                  fontSize: AppSizes.textSub)),
-                        ))
-                    .toList(),
+                children: [
+                  if (stack.hasVisibleLabel)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSizes.xs),
+                      child: Text(
+                        stack.trimmedLabel,
+                        style: const TextStyle(
+                          color: AppColors.faint,
+                          fontSize: AppSizes.textSub,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ...stack.tasks.map((task) => Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSizes.xs),
+                        child: Text(task.label,
+                            style: const TextStyle(
+                                color: AppColors.light,
+                                fontSize: AppSizes.textSub)),
+                      )),
+                ],
               ),
             )),
         BluePanel(
@@ -51,8 +63,7 @@ class ViewTemplateWidget extends StatelessWidget {
                 SizedBox(width: AppSizes.s),
                 Text('Back',
                     style: TextStyle(
-                        color: AppColors.light,
-                        fontSize: AppSizes.textSub)),
+                        color: AppColors.light, fontSize: AppSizes.textSub)),
               ],
             ),
           ),
