@@ -79,21 +79,20 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             children: _sorted(state.templates)
                 .map((t) => _TemplateCard(
                       template: t,
+                      completionCount: state.completionCountForTemplate(t.id),
                       onInstantiate: () {
                         final checklist =
                             context.read<AppState>().instantiateTemplate(t);
                         context.read<AppState>().saveChecklist(checklist);
                         context.go('/checklists');
                       },
-                      onView: () =>
-                          setState(() => _viewingTemplate = t),
+                      onView: () => setState(() => _viewingTemplate = t),
                       onEdit: () => context.push(
                           '/templates/edit?templateId=${t.id}&isNew=false'),
                       onRemove: () => showConfirmDialog(
                         context: context,
                         title: 'Remove template',
-                        message:
-                            'Are you sure you want to remove ${t.label}?',
+                        message: 'Are you sure you want to remove ${t.label}?',
                         onConfirm: () =>
                             context.read<AppState>().removeTemplate(t.id),
                       ),
@@ -105,8 +104,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                 .toList(),
           ),
         HoverFab(
-          onPressed: () =>
-              context.push('/templates/edit?isNew=true'),
+          onPressed: () => context.push('/templates/edit?isNew=true'),
         ),
       ],
     );
@@ -115,6 +113,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
 
 class _TemplateCard extends StatelessWidget {
   final ChecklistTemplate template;
+  final int completionCount;
   final VoidCallback onInstantiate;
   final VoidCallback onView;
   final VoidCallback onEdit;
@@ -123,6 +122,7 @@ class _TemplateCard extends StatelessWidget {
 
   const _TemplateCard({
     required this.template,
+    required this.completionCount,
     required this.onInstantiate,
     required this.onView,
     required this.onEdit,
@@ -133,8 +133,7 @@ class _TemplateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(
-          AppSizes.s, AppSizes.s, AppSizes.s, 0),
+      margin: const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
       padding: const EdgeInsets.symmetric(
           vertical: AppSizes.m, horizontal: AppSizes.s),
       decoration: BoxDecoration(
@@ -148,9 +147,7 @@ class _TemplateCard extends StatelessWidget {
             icon: FaIcon(
               FontAwesomeIcons.solidStar,
               size: AppSizes.iconMedium,
-              color: template.favorite
-                  ? AppColors.highlight2
-                  : AppColors.light,
+              color: template.favorite ? AppColors.highlight2 : AppColors.light,
             ),
           ),
           Expanded(
@@ -163,14 +160,12 @@ class _TemplateCard extends StatelessWidget {
                   Text(
                     template.label,
                     style: const TextStyle(
-                        color: AppColors.light,
-                        fontSize: AppSizes.textMinor),
+                        color: AppColors.light, fontSize: AppSizes.textMinor),
                   ),
                   Text(
-                    '${template.stacks[0].tasks.length} tasks',
+                    '${template.stacks[0].tasks.length} tasks • completed $completionCount ${completionCount == 1 ? 'time' : 'times'}',
                     style: const TextStyle(
-                        color: AppColors.faint,
-                        fontSize: AppSizes.textSub),
+                        color: AppColors.faint, fontSize: AppSizes.textSub),
                   ),
                 ],
               ),

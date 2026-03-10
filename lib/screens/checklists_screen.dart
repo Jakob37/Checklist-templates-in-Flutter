@@ -145,7 +145,8 @@ class _ChecklistItem extends StatelessWidget {
         // Done bar
         if (isDone)
           GestureDetector(
-            onTap: () => context.read<AppState>().removeChecklist(checklist.id),
+            onTap: () =>
+                context.read<AppState>().completeChecklist(checklist.id),
             child: Container(
               margin: const EdgeInsets.fromLTRB(
                   AppSizes.s, AppSizes.s, AppSizes.s, 0),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/checklist.dart';
+import '../models/checklist_history_entry.dart';
 import '../models/checklist_template.dart';
 import '../models/id_gen.dart';
 import '../services/storage_service.dart';
@@ -7,13 +8,17 @@ import '../services/storage_service.dart';
 class AppState extends ChangeNotifier {
   List<ChecklistTemplate> _templates = [];
   List<Checklist> _checklists = [];
+  List<ChecklistHistoryEntry> _historyEntries = [];
 
   List<ChecklistTemplate> get templates => List.unmodifiable(_templates);
   List<Checklist> get checklists => List.unmodifiable(_checklists);
+  List<ChecklistHistoryEntry> get historyEntries =>
+      List.unmodifiable(_historyEntries);
 
   Future<void> init() async {
     _templates = await StorageService.loadTemplates();
     _checklists = await StorageService.loadChecklists();
+    _historyEntries = await StorageService.loadHistoryEntries();
   }
 
   // ── Template mutations ──────────────────────────────────────────────────────
@@ -67,6 +72,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> completeChecklist(String checklistId) async {
+    final checklist = _checklists.firstWhere((c) => c.id == checklistId);
+    _historyEntries = [
+      ..._historyEntries,
+      ChecklistHistoryEntry(
+        id: generateId('history'),
+        templateId: checklist.template.id,
+        templateLabel: checklist.template.label,
+        completedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    ];
+    _checklists = _checklists.where((c) => c.id != checklistId).toList();
+    await StorageService.saveChecklists(_checklists);
+    await StorageService.saveHistoryEntries(_historyEntries);
+    notifyListeners();
+  }
+
   Future<void> toggleCheck(String checklistId, String checkboxId) async {
     _checklists = _checklists.map((checklist) {
       if (checklist.id != checklistId) return checklist;
@@ -110,6 +132,9 @@ class AppState extends ChangeNotifier {
     final c = _checklists.firstWhere((c) => c.id == checklistId);
     return !c.checkboxes.any((b) => b.checked == CheckboxStatus.unchecked);
   }
+
+  int completionCountForTemplate(String templateId) =>
+      _historyEntries.where((entry) => entry.templateId == templateId).length;
 
   // ── Template factory helpers ─────────────────────────────────────────────────
 

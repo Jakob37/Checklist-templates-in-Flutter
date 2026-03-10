@@ -59,4 +59,26 @@ void main() {
     );
     expect(syncedChecklist.template.label, 'Morning');
   });
+
+  test('completing a checklist stores template history', () async {
+    final state = AppState();
+    final template = state.buildTemplate(
+      templateId: 'template-2',
+      templateName: 'Evening',
+      isFavorite: false,
+      taskLabels: ['Doors', 'Lights'],
+    );
+
+    await state.saveTemplate(template);
+
+    final checklist = state.instantiateTemplate(template);
+    await state.saveChecklist(checklist);
+    await state.toggleCheck(checklist.id, checklist.checkboxes.first.id);
+    await state.toggleCheck(checklist.id, checklist.checkboxes.last.id);
+    await state.completeChecklist(checklist.id);
+
+    expect(state.checklists, isEmpty);
+    expect(state.completionCountForTemplate(template.id), 1);
+    expect(state.historyEntries.single.templateLabel, 'Evening');
+  });
 }
