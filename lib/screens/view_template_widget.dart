@@ -4,6 +4,7 @@ import '../models/checklist_template.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../widgets/blue_panel.dart';
+import '../widgets/screen_header.dart';
 
 class ViewTemplateWidget extends StatelessWidget {
   final ChecklistTemplate template;
@@ -14,30 +15,40 @@ class ViewTemplateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
       children: [
-        BluePanel(
-          child: Text(
-            template.label,
-            style: const TextStyle(
-                color: AppColors.light,
-                fontSize: AppSizes.textMinor,
-                fontWeight: FontWeight.bold),
+        ScreenHeader(
+          title: template.label,
+          subtitle:
+              '${template.taskCount} tasks across ${template.stacks.length} ${template.stacks.length == 1 ? 'group' : 'groups'}',
+          icon: const FaIcon(
+            FontAwesomeIcons.eye,
+            size: AppSizes.iconMedium,
+            color: AppColors.light,
+          ),
+          trailing: IconButton(
+            onPressed: onBack,
+            icon: const FaIcon(
+              FontAwesomeIcons.arrowLeft,
+              size: AppSizes.iconMedium,
+              color: AppColors.light,
+            ),
           ),
         ),
         ...template.stacks.map((stack) => BluePanel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (stack.hasVisibleLabel)
+                  if (stack.hasVisibleLabel || stack.isOptional)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSizes.xs),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
-                              stack.trimmedLabel,
+                              stack.hasVisibleLabel
+                                  ? stack.trimmedLabel
+                                  : 'Checklist group',
                               style: const TextStyle(
                                 color: AppColors.faint,
                                 fontSize: AppSizes.textSub,
@@ -56,18 +67,6 @@ class ViewTemplateWidget extends StatelessWidget {
                             ),
                         ],
                       ),
-                    )
-                  else if (stack.isOptional)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: AppSizes.xs),
-                      child: Text(
-                        'Optional group',
-                        style: TextStyle(
-                          color: AppColors.highlight2,
-                          fontSize: AppSizes.textSub,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ),
                   ...stack.tasks.map((task) => Padding(
                         padding:
@@ -80,21 +79,6 @@ class ViewTemplateWidget extends StatelessWidget {
                 ],
               ),
             )),
-        BluePanel(
-          child: GestureDetector(
-            onTap: onBack,
-            child: const Row(
-              children: [
-                FaIcon(FontAwesomeIcons.arrowLeft,
-                    size: AppSizes.iconMedium, color: AppColors.light),
-                SizedBox(width: AppSizes.s),
-                Text('Back',
-                    style: TextStyle(
-                        color: AppColors.light, fontSize: AppSizes.textSub)),
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }

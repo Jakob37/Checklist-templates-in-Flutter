@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../widgets/blue_panel.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/screen_header.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,23 +16,33 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        const BluePanel(
-          margin: EdgeInsets.fromLTRB(
-              AppSizes.s, AppSizes.s, AppSizes.s, 0),
-          child: Text(
-            'Version: v1.0.0',
-            style: TextStyle(color: AppColors.light, fontSize: AppSizes.textSub),
+        const ScreenHeader(
+          title: 'Settings',
+          subtitle: 'Export, import, and manage your checklist data.',
+          icon: Icon(
+            Icons.settings_outlined,
+            size: AppSizes.iconMedium,
+            color: AppColors.light,
           ),
+          trailing: _VersionBadge(version: 'v1.0.0'),
         ),
-
         BluePanel(
-          margin: const EdgeInsets.fromLTRB(
-              AppSizes.s, AppSizes.s, AppSizes.s, 0),
+          margin:
+              const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'You can export the full data containing your templates and ongoing checklists in JSON format.',
+                'Export data',
+                style: TextStyle(
+                  color: AppColors.light,
+                  fontSize: AppSizes.textMinor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSizes.xs),
+              const Text(
+                'Save your templates and ongoing checklists as a JSON backup file.',
                 style: TextStyle(
                     color: AppColors.light, fontSize: AppSizes.textSub),
               ),
@@ -67,15 +78,23 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
-
         BluePanel(
-          margin: const EdgeInsets.fromLTRB(
-              AppSizes.s, AppSizes.s, AppSizes.s, 0),
+          margin:
+              const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Import lists from exported JSON. This will not erase any data. You will be prompted before import.',
+                'Import data',
+                style: TextStyle(
+                  color: AppColors.light,
+                  fontSize: AppSizes.textMinor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSizes.xs),
+              const Text(
+                'Import templates from an exported JSON file. Existing data stays in place, and duplicates are skipped.',
                 style: TextStyle(
                     color: AppColors.light, fontSize: AppSizes.textSub),
               ),
@@ -120,8 +139,7 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Import JSON',
                     message:
                         'Import ${newTemplates.length} checklist template$s?$alreadyExistsStr',
-                    onConfirm: () =>
-                        state.saveNewTemplates(newTemplates),
+                    onConfirm: () => state.saveNewTemplates(newTemplates),
                   );
                 },
                 child: const Text('Import data',
@@ -131,6 +149,34 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _VersionBadge extends StatelessWidget {
+  final String version;
+
+  const _VersionBadge({required this.version});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.s,
+        vertical: AppSizes.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+      ),
+      child: Text(
+        version,
+        style: const TextStyle(
+          color: AppColors.light,
+          fontSize: AppSizes.textSub,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

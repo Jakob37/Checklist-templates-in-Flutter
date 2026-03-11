@@ -63,42 +63,44 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     final index = _locationToIndex(location);
+    final showBottomNav = !location.startsWith('/templates/edit');
 
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: child,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: index,
-        onTap: (i) {
-          switch (i) {
-            case 0:
-              context.go('/templates');
-              break;
-            case 1:
-              context.go('/checklists');
-              break;
-            case 2:
-              context.go('/settings');
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.list, size: AppSizes.iconMedium),
-            label: 'Templates',
-          ),
-          BottomNavigationBarItem(
-            icon: _ChecklistNavIcon(),
-            label: 'Checklists',
-          ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.gear, size: AppSizes.iconMedium),
-            label: 'Settings',
-          ),
-        ],
-      ),
+      body: SafeArea(child: child),
+      bottomNavigationBar: showBottomNav
+          ? NavigationBar(
+              selectedIndex: index,
+              onDestinationSelected: (i) {
+                switch (i) {
+                  case 0:
+                    context.go('/templates');
+                    break;
+                  case 1:
+                    context.go('/checklists');
+                    break;
+                  case 2:
+                    context.go('/settings');
+                    break;
+                }
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon:
+                      FaIcon(FontAwesomeIcons.list, size: AppSizes.iconMedium),
+                  label: 'Templates',
+                ),
+                NavigationDestination(
+                  icon: _ChecklistNavIcon(),
+                  label: 'Checklists',
+                ),
+                NavigationDestination(
+                  icon:
+                      FaIcon(FontAwesomeIcons.gear, size: AppSizes.iconMedium),
+                  label: 'Settings',
+                ),
+              ],
+            )
+          : null,
     );
   }
 }

@@ -7,6 +7,10 @@ import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../widgets/blue_panel.dart';
+import '../widgets/confirm_dialog.dart';
+import '../widgets/screen_header.dart';
+
+enum _ChecklistAction { editTemplate, reset, remove }
 
 class ChecklistsScreen extends StatelessWidget {
   const ChecklistsScreen({super.key});
@@ -19,6 +23,16 @@ class ChecklistsScreen extends StatelessWidget {
 
     return ListView(
       children: [
+        ScreenHeader(
+          title: 'Active checklists',
+          subtitle: 'Keep track of tasks in progress and finish them here.',
+          icon: const FaIcon(
+            FontAwesomeIcons.squareCheck,
+            size: AppSizes.iconMedium,
+            color: AppColors.light,
+          ),
+          trailing: _ChecklistCount(count: sorted.length),
+        ),
         if (sorted.isEmpty)
           BluePanel(
             margin: const EdgeInsets.fromLTRB(
@@ -94,49 +108,126 @@ class _ChecklistItem extends StatelessWidget {
     final state = context.watch<AppState>();
     final isDone = state.isChecklistDone(checklist.id);
     final sections = _buildSections();
+    final totalCount = checklist.checkboxes.length;
+    final checkedCount = checklist.checkboxes
+        .where((box) => box.checked == CheckboxStatus.checked)
+        .length;
+    final progress = totalCount == 0 ? 0.0 : checkedCount / totalCount;
 
     return Column(
       children: [
-        // Header
         BluePanel(
           margin:
               const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                checklist.template.label,
-                style: const TextStyle(
-                    color: AppColors.light,
-                    fontSize: AppSizes.textMinor,
-                    fontWeight: FontWeight.bold),
-              ),
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    onPressed: () => context.push(
-                      '/templates/edit?templateId=${checklist.template.id}&isNew=false&syncActiveChecklists=true',
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          checklist.template.label,
+                          style: const TextStyle(
+                              color: AppColors.light,
+                              fontSize: AppSizes.textMinor,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: AppSizes.xs),
+                        Text(
+                          '$checkedCount of $totalCount completed',
+                          style: const TextStyle(
+                            color: AppColors.faint,
+                            fontSize: AppSizes.textSub,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  PopupMenuButton<_ChecklistAction>(
+                    tooltip: 'Checklist actions',
+                    onSelected: (action) {
+                      switch (action) {
+                        case _ChecklistAction.editTemplate:
+                          context.push(
+                            '/templates/edit?templateId=${checklist.template.id}&isNew=false&syncActiveChecklists=true',
+                          );
+                          break;
+                        case _ChecklistAction.reset:
+                          context.read<AppState>().resetChecklist(checklist.id);
+                          break;
+                        case _ChecklistAction.remove:
+                          showConfirmDialog(
+                            context: context,
+                            title: 'Remove checklist',
+                            message:
+                                'Are you sure you want to remove ${checklist.template.label}?',
+                            onConfirm: () => context
+                                .read<AppState>()
+                                .removeChecklist(checklist.id),
+                          );
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: _ChecklistAction.editTemplate,
+                        child: Text('Edit template'),
+                      ),
+                      PopupMenuItem(
+                        value: _ChecklistAction.reset,
+                        child: Text('Reset checklist'),
+                      ),
+                      PopupMenuItem(
+                        value: _ChecklistAction.remove,
+                        child: Text('Delete checklist'),
+                      ),
+                    ],
                     icon: const FaIcon(
-                      FontAwesomeIcons.pen,
+                      FontAwesomeIcons.ellipsisVertical,
                       size: AppSizes.iconMedium,
                       color: AppColors.light,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () =>
-                        context.read<AppState>().removeChecklist(checklist.id),
-                    icon: const FaIcon(FontAwesomeIcons.trash,
-                        size: AppSizes.iconMedium, color: AppColors.light),
-                  ),
                 ],
               ),
+              const SizedBox(height: AppSizes.s),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: AppColors.primary,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppColors.highlight1),
+                ),
+              ),
+              if (isDone) ...[
+                const SizedBox(height: AppSizes.s),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.s,
+                    vertical: AppSizes.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+                  ),
+                  child: const Text(
+                    'Ready to complete',
+                    style: TextStyle(
+                      color: AppColors.highlight1,
+                      fontSize: AppSizes.textSub,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
-
-        // Checkboxes
         BluePanel(
           margin:
               const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.xs, AppSizes.s, 0),
@@ -216,8 +307,6 @@ class _ChecklistItem extends StatelessWidget {
             }).toList(),
           ),
         ),
-
-        // Done bar
         if (isDone)
           GestureDetector(
             onTap: () =>
@@ -237,7 +326,7 @@ class _ChecklistItem extends StatelessWidget {
                       size: AppSizes.iconLarge, color: AppColors.white),
                   SizedBox(width: AppSizes.s),
                   Text(
-                    'Done',
+                    'Complete checklist',
                     style: TextStyle(
                         fontSize: AppSizes.textMajor, color: AppColors.white),
                   ),
@@ -246,6 +335,34 @@ class _ChecklistItem extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ChecklistCount extends StatelessWidget {
+  final int count;
+
+  const _ChecklistCount({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.s,
+        vertical: AppSizes.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+      ),
+      child: Text(
+        '$count open',
+        style: const TextStyle(
+          color: AppColors.light,
+          fontSize: AppSizes.textSub,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
