@@ -23,6 +23,7 @@ class BluePanel extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(AppSizes.s),
       decoration: BoxDecoration(
         color: AppColors.secondary,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: child,

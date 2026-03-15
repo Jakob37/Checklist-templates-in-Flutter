@@ -50,7 +50,7 @@ class ViewTemplateWidget extends StatelessWidget {
                               style: const TextStyle(
                                 color: AppColors.faint,
                                 fontSize: AppSizes.textSub,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -60,7 +60,7 @@ class ViewTemplateWidget extends StatelessWidget {
                               style: TextStyle(
                                 color: AppColors.highlight2,
                                 fontSize: AppSizes.textSub,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                         ],

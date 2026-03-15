@@ -44,7 +44,7 @@ class ChecklistsScreen extends StatelessWidget {
                   style: TextStyle(
                     color: AppColors.light,
                     fontSize: AppSizes.textMinor,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 TextButton(
@@ -134,7 +134,7 @@ class _ChecklistItem extends StatelessWidget {
                           style: const TextStyle(
                               color: AppColors.light,
                               fontSize: AppSizes.textMinor,
-                              fontWeight: FontWeight.bold),
+                              fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: AppSizes.xs),
                         Text(
@@ -221,7 +221,7 @@ class _ChecklistItem extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.highlight1,
                       fontSize: AppSizes.textSub,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -252,7 +252,7 @@ class _ChecklistItem extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.faint,
                         fontSize: AppSizes.textSub,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -329,7 +329,10 @@ class _ChecklistItem extends StatelessWidget {
                   Text(
                     'Complete checklist',
                     style: TextStyle(
-                        fontSize: AppSizes.textMajor, color: AppColors.white),
+                      fontSize: AppSizes.textMinor,
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -354,6 +357,7 @@ class _ChecklistCount extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.primary,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: Text(
@@ -361,7 +365,7 @@ class _ChecklistCount extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.light,
           fontSize: AppSizes.textSub,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

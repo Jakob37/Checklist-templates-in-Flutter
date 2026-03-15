@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 
 class HoverFab extends StatelessWidget {
@@ -18,9 +17,10 @@ class HoverFab extends StatelessWidget {
         height: AppSizes.hoverButton,
         child: FloatingActionButton(
           onPressed: onPressed,
-          backgroundColor: AppColors.highlight1,
-          elevation: 3,
-          child: const FaIcon(FontAwesomeIcons.plus, color: AppColors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+          ),
+          child: const FaIcon(FontAwesomeIcons.plus),
         ),
       ),
     );

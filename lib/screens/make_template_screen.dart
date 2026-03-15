@@ -334,7 +334,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                           style: const TextStyle(
                             color: AppColors.light,
                             fontSize: AppSizes.textMinor,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -355,7 +355,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                             style: TextStyle(
                               color: AppColors.faint,
                               fontSize: AppSizes.textSub,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -409,7 +409,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                     style: TextStyle(
                       color: AppColors.light,
                       fontSize: AppSizes.textMinor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -474,7 +474,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                         horizontal: AppSizes.s,
                         vertical: AppSizes.s,
                       ),
-                      side: const BorderSide(color: AppColors.faint),
+                      side: const BorderSide(color: AppColors.border),
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(AppSizes.borderRadius),
@@ -509,7 +509,10 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                 horizontal: AppSizes.s,
               ),
               decoration: BoxDecoration(
-                color: _saveActive ? AppColors.highlight2 : AppColors.faint,
+                color: _saveActive ? AppColors.highlight2 : AppColors.primary,
+                border: Border.all(
+                  color: _saveActive ? AppColors.highlight2 : AppColors.border,
+                ),
                 borderRadius: BorderRadius.circular(AppSizes.borderRadius),
               ),
               child: Row(
@@ -517,14 +520,15 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                   FaIcon(
                     FontAwesomeIcons.floppyDisk,
                     size: AppSizes.iconMedium,
-                    color: _saveActive ? AppColors.white : AppColors.light,
+                    color: _saveActive ? AppColors.white : AppColors.faint,
                   ),
                   const SizedBox(width: AppSizes.s),
                   Text(
                     widget.syncActiveChecklists ? 'Save + sync' : 'Save',
                     style: TextStyle(
                       fontSize: AppSizes.textMinor,
-                      color: _saveActive ? AppColors.white : AppColors.light,
+                      color: _saveActive ? AppColors.white : AppColors.faint,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -618,7 +622,7 @@ class _StackEditorCard extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.light,
                         fontSize: AppSizes.textSub,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(

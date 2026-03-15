@@ -46,7 +46,7 @@ class ScreenHeader extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.light,
                     fontSize: AppSizes.textSub,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (subtitle != null && subtitle!.trim().isNotEmpty) ...[

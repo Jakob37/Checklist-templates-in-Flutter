@@ -104,7 +104,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                       style: TextStyle(
                         color: AppColors.light,
                         fontSize: AppSizes.textMinor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     TextButton(
@@ -170,6 +170,7 @@ class _HeaderCount extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.primary,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: Text(
@@ -177,7 +178,7 @@ class _HeaderCount extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.light,
           fontSize: AppSizes.textSub,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -257,12 +258,12 @@ class _OptionalGroupsDialogState extends State<_OptionalGroupsDialog> {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.highlight2,
+            backgroundColor: AppColors.secondary,
+            foregroundColor: AppColors.light,
           ),
           onPressed: () => Navigator.of(context).pop(_selectedStackIds),
           child: const Text(
             'Start',
-            style: TextStyle(color: AppColors.white),
           ),
         ),
       ],
@@ -296,6 +297,7 @@ class _TemplateCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSizes.s),
       decoration: BoxDecoration(
         color: AppColors.secondary,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: Column(
@@ -325,7 +327,7 @@ class _TemplateCard extends StatelessWidget {
                         style: const TextStyle(
                           color: AppColors.light,
                           fontSize: AppSizes.textMinor,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: AppSizes.xs),

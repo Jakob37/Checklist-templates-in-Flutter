@@ -127,7 +127,7 @@ class _ChecklistNavIcon extends StatelessWidget {
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               padding: const EdgeInsets.symmetric(horizontal: 4),
               decoration: const BoxDecoration(
-                color: Colors.red,
+                color: AppColors.highlight2,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
@@ -136,7 +136,7 @@ class _ChecklistNavIcon extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.white,
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

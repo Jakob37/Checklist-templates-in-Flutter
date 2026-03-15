@@ -23,8 +23,10 @@ Future<void> showConfirmDialog({
             Navigator.of(ctx).pop();
             onConfirm();
           },
-          child:
-              const Text('Confirm', style: TextStyle(color: AppColors.highlight1)),
+          child: const Text(
+            'Confirm',
+            style: TextStyle(color: AppColors.highlight1),
+          ),
         ),
       ],
     ),

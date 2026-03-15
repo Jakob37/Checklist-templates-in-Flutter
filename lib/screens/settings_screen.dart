@@ -36,13 +36,11 @@ class SettingsScreen extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.light,
                   fontSize: AppSizes.textMinor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppSizes.s),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.highlight1),
                 onPressed: () async {
                   final state = context.read<AppState>();
                   final bundle = ExportBundle(
@@ -82,13 +80,11 @@ class SettingsScreen extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.light,
                   fontSize: AppSizes.textMinor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppSizes.s),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.highlight1),
                 onPressed: () async {
                   ExportBundle? result;
                   try {
@@ -154,6 +150,7 @@ class _VersionBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.primary,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: Text(
@@ -161,7 +158,7 @@ class _VersionBadge extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.light,
           fontSize: AppSizes.textSub,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
