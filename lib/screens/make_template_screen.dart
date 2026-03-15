@@ -303,9 +303,6 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   @override
   Widget build(BuildContext context) {
     final screenTitle = widget.isNew ? 'New template' : 'Edit template';
-    final screenSubtitle = widget.syncActiveChecklists
-        ? 'Changes here will also update the active checklist.'
-        : 'Organize tasks into groups. Use each row menu for reorder and delete.';
 
     return Scaffold(
       body: Column(
@@ -329,25 +326,39 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                 ),
                 const SizedBox(width: AppSizes.xs),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        screenTitle,
-                        style: const TextStyle(
-                          color: AppColors.light,
-                          fontSize: AppSizes.textMinor,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          screenTitle,
+                          style: const TextStyle(
+                            color: AppColors.light,
+                            fontSize: AppSizes.textMinor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: AppSizes.xs),
-                      Text(
-                        screenSubtitle,
-                        style: const TextStyle(
-                          color: AppColors.faint,
-                          fontSize: AppSizes.textSub,
+                      if (widget.syncActiveChecklists)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.s,
+                            vertical: AppSizes.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.borderRadius,
+                            ),
+                          ),
+                          child: const Text(
+                            'Sync active',
+                            style: TextStyle(
+                              color: AppColors.faint,
+                              fontSize: AppSizes.textSub,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -376,9 +387,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
               autofocus: widget.isNew,
               style: const TextStyle(color: AppColors.light),
               decoration: const InputDecoration(
-                labelText: 'Template name',
-                labelStyle: TextStyle(color: AppColors.faint),
-                hintText: 'Enter template name',
+                hintText: 'Template name',
                 hintStyle: TextStyle(color: AppColors.faint),
                 border: InputBorder.none,
               ),
@@ -396,7 +405,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
               children: [
                 const Expanded(
                   child: Text(
-                    'Checkbox groups',
+                    'Groups',
                     style: TextStyle(
                       color: AppColors.light,
                       fontSize: AppSizes.textMinor,
@@ -477,7 +486,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                       color: AppColors.light,
                     ),
                     label: const Text(
-                      'Add checkbox group',
+                      'Add group',
                       style: TextStyle(
                         color: AppColors.light,
                         fontSize: AppSizes.textSub,
@@ -512,11 +521,9 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                   ),
                   const SizedBox(width: AppSizes.s),
                   Text(
-                    widget.syncActiveChecklists
-                        ? 'Save template and checklist'
-                        : 'Save template',
+                    widget.syncActiveChecklists ? 'Save + sync' : 'Save',
                     style: TextStyle(
-                      fontSize: AppSizes.textMajor,
+                      fontSize: AppSizes.textMinor,
                       color: _saveActive ? AppColors.white : AppColors.light,
                     ),
                   ),
@@ -577,7 +584,7 @@ class _StackEditorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final taskCountLabel =
-        '${stack.tasks.length} ${stack.tasks.length == 1 ? 'checkbox' : 'checkboxes'}';
+        '${stack.tasks.length} ${stack.tasks.length == 1 ? 'task' : 'tasks'}';
     final hasMenuActions = canMoveUp || canMoveDown || canRemove;
 
     return BluePanel(
@@ -699,16 +706,9 @@ class _StackEditorCard extends StatelessWidget {
               value: isOptional,
               activeThumbColor: AppColors.highlight2,
               title: const Text(
-                'Optional group',
+                'Optional',
                 style: TextStyle(
                   color: AppColors.light,
-                  fontSize: AppSizes.textSub,
-                ),
-              ),
-              subtitle: const Text(
-                'Ask whether this group should be included when a checklist starts.',
-                style: TextStyle(
-                  color: AppColors.faint,
                   fontSize: AppSizes.textSub,
                 ),
               ),
@@ -716,22 +716,6 @@ class _StackEditorCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSizes.s),
-          if (stack.tasks.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSizes.s),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppSizes.borderRadius),
-              ),
-              child: const Text(
-                'No checkboxes in this group yet.',
-                style: TextStyle(
-                  color: AppColors.faint,
-                  fontSize: AppSizes.textSub,
-                ),
-              ),
-            ),
           ...stack.tasks.asMap().entries.map((entry) {
             final index = entry.key;
             final task = entry.value;
@@ -761,12 +745,12 @@ class _StackEditorCard extends StatelessWidget {
             children: [
               _EditorActionButton(
                 icon: FontAwesomeIcons.plus,
-                label: 'Add checkbox',
+                label: 'Add task',
                 onPressed: onAddTask,
               ),
               _EditorActionButton(
                 icon: FontAwesomeIcons.layerGroup,
-                label: 'Add group below',
+                label: 'Add group',
                 onPressed: onAddGroupAfter,
               ),
             ],

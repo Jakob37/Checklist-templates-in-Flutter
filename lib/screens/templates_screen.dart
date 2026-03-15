@@ -85,14 +85,12 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
           children: [
             ScreenHeader(
               title: 'Templates',
-              subtitle:
-                  'Build reusable checklists and launch them when needed.',
               icon: const FaIcon(
                 FontAwesomeIcons.listCheck,
                 size: AppSizes.iconMedium,
                 color: AppColors.light,
               ),
-              trailing: _HeaderCount(count: templateCount, label: 'saved'),
+              trailing: _HeaderCount(count: templateCount),
             ),
             if (state.templates.isEmpty)
               BluePanel(
@@ -102,14 +100,14 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Press "+" to add your first template, or load example templates to see the flow.',
+                      'No templates yet',
                       style: TextStyle(
-                          color: AppColors.light, fontSize: AppSizes.textSub),
+                        color: AppColors.light,
+                        fontSize: AppSizes.textMinor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: AppSizes.s),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.highlight1),
+                    TextButton(
                       onPressed: () {
                         final s = context.read<AppState>();
                         s.saveNewTemplates([
@@ -118,8 +116,10 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                           s.makeBeforeSocialTemplate(),
                         ]);
                       },
-                      child: const Text('Add example templates',
-                          style: TextStyle(color: AppColors.white)),
+                      child: const Text(
+                        'Load examples',
+                        style: TextStyle(color: AppColors.highlight1),
+                      ),
                     ),
                   ],
                 ),
@@ -156,11 +156,9 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
 
 class _HeaderCount extends StatelessWidget {
   final int count;
-  final String label;
 
   const _HeaderCount({
     required this.count,
-    required this.label,
   });
 
   @override
@@ -175,7 +173,7 @@ class _HeaderCount extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: Text(
-        '$count $label',
+        '$count',
         style: const TextStyle(
           color: AppColors.light,
           fontSize: AppSizes.textSub,
@@ -218,14 +216,6 @@ class _OptionalGroupsDialogState extends State<_OptionalGroupsDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Choose which optional groups to include.',
-              style: TextStyle(
-                color: AppColors.faint,
-                fontSize: AppSizes.textSub,
-              ),
-            ),
-            const SizedBox(height: AppSizes.s),
             ...widget.optionalStacks.map((stack) {
               final label = stack.hasVisibleLabel
                   ? stack.trimmedLabel
@@ -271,7 +261,7 @@ class _OptionalGroupsDialogState extends State<_OptionalGroupsDialog> {
           ),
           onPressed: () => Navigator.of(context).pop(_selectedStackIds),
           child: const Text(
-            'Create checklist',
+            'Start',
             style: TextStyle(color: AppColors.white),
           ),
         ),
@@ -320,7 +310,7 @@ class _TemplateCard extends StatelessWidget {
                   size: AppSizes.iconMedium,
                   color: template.favorite
                       ? AppColors.highlight2
-                      : AppColors.light,
+                      : AppColors.faint,
                 ),
               ),
               Expanded(
@@ -340,14 +330,27 @@ class _TemplateCard extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSizes.xs),
                       Text(
-                        '${template.taskCount} tasks • completed $completionCount ${completionCount == 1 ? 'time' : 'times'}',
+                        '${template.taskCount} ${template.taskCount == 1 ? 'task' : 'tasks'} • ${completionCount}x',
                         style: const TextStyle(
                           color: AppColors.faint,
                           fontSize: AppSizes.textSub,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
+                ),
+              ),
+              IconButton(
+                onPressed: onInstantiate,
+                tooltip: 'Start checklist',
+                style: IconButton.styleFrom(
+                  foregroundColor: AppColors.highlight1,
+                ),
+                icon: const FaIcon(
+                  FontAwesomeIcons.play,
+                  size: AppSizes.iconMedium,
                 ),
               ),
               PopupMenuButton<_TemplateCardAction>(
@@ -386,26 +389,6 @@ class _TemplateCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: AppSizes.s),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.highlight1,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(vertical: AppSizes.s),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.borderRadius),
-                ),
-              ),
-              onPressed: onInstantiate,
-              icon: const FaIcon(
-                FontAwesomeIcons.play,
-                size: AppSizes.iconMedium,
-              ),
-              label: const Text('Start checklist'),
-            ),
           ),
         ],
       ),

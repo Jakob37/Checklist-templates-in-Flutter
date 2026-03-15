@@ -19,8 +19,6 @@ class ViewTemplateWidget extends StatelessWidget {
       children: [
         ScreenHeader(
           title: template.label,
-          subtitle:
-              '${template.taskCount} tasks across ${template.stacks.length} ${template.stacks.length == 1 ? 'group' : 'groups'}',
           icon: const FaIcon(
             FontAwesomeIcons.eye,
             size: AppSizes.iconMedium,

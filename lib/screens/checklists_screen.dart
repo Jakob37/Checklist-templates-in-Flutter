@@ -25,7 +25,6 @@ class ChecklistsScreen extends StatelessWidget {
       children: [
         ScreenHeader(
           title: 'Active checklists',
-          subtitle: 'Keep track of tasks in progress and finish them here.',
           icon: const FaIcon(
             FontAwesomeIcons.squareCheck,
             size: AppSizes.iconMedium,
@@ -41,17 +40,19 @@ class ChecklistsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Currently no active checklists',
+                  'No active checklists',
                   style: TextStyle(
-                      color: AppColors.light, fontSize: AppSizes.textMajor),
+                    color: AppColors.light,
+                    fontSize: AppSizes.textMinor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: AppSizes.s),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.highlight1),
+                TextButton(
                   onPressed: () => context.go('/templates'),
-                  child: const Text('Go to templates',
-                      style: TextStyle(color: AppColors.white)),
+                  child: const Text(
+                    'Templates',
+                    style: TextStyle(color: AppColors.highlight1),
+                  ),
                 ),
               ],
             ),
@@ -137,7 +138,7 @@ class _ChecklistItem extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.xs),
                         Text(
-                          '$checkedCount of $totalCount completed',
+                          '$checkedCount/$totalCount',
                           style: const TextStyle(
                             color: AppColors.faint,
                             fontSize: AppSizes.textSub,
@@ -216,7 +217,7 @@ class _ChecklistItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSizes.borderRadius),
                   ),
                   child: const Text(
-                    'Ready to complete',
+                    'Done',
                     style: TextStyle(
                       color: AppColors.highlight1,
                       fontSize: AppSizes.textSub,
@@ -356,7 +357,7 @@ class _ChecklistCount extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
       ),
       child: Text(
-        '$count open',
+        '$count',
         style: const TextStyle(
           color: AppColors.light,
           fontSize: AppSizes.textSub,

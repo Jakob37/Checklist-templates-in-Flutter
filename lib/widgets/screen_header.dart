@@ -5,7 +5,7 @@ import 'blue_panel.dart';
 
 class ScreenHeader extends StatelessWidget {
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget icon;
   final Widget? trailing;
   final EdgeInsetsGeometry? margin;
@@ -13,7 +13,7 @@ class ScreenHeader extends StatelessWidget {
   const ScreenHeader({
     super.key,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.icon,
     this.trailing,
     this.margin,
@@ -27,8 +27,8 @@ class ScreenHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(AppSizes.borderRadius),
@@ -45,18 +45,20 @@ class ScreenHeader extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: AppColors.light,
-                    fontSize: AppSizes.textMinor,
+                    fontSize: AppSizes.textSub,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: AppSizes.xs),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppColors.faint,
-                    fontSize: AppSizes.textSub,
+                if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                  const SizedBox(height: AppSizes.xs),
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      color: AppColors.faint,
+                      fontSize: AppSizes.textSub,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

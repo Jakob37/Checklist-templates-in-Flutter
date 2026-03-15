@@ -18,7 +18,6 @@ class SettingsScreen extends StatelessWidget {
       children: [
         const ScreenHeader(
           title: 'Settings',
-          subtitle: 'Export, import, and manage your checklist data.',
           icon: Icon(
             Icons.settings_outlined,
             size: AppSizes.iconMedium,
@@ -39,12 +38,6 @@ class SettingsScreen extends StatelessWidget {
                   fontSize: AppSizes.textMinor,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: AppSizes.xs),
-              const Text(
-                'Save your templates and ongoing checklists as a JSON backup file.',
-                style: TextStyle(
-                    color: AppColors.light, fontSize: AppSizes.textSub),
               ),
               const SizedBox(height: AppSizes.s),
               ElevatedButton(
@@ -72,7 +65,7 @@ class SettingsScreen extends StatelessWidget {
                     }
                   }
                 },
-                child: const Text('Export data as JSON',
+                child: const Text('Export JSON',
                     style: TextStyle(color: AppColors.white)),
               ),
             ],
@@ -91,12 +84,6 @@ class SettingsScreen extends StatelessWidget {
                   fontSize: AppSizes.textMinor,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: AppSizes.xs),
-              const Text(
-                'Import templates from an exported JSON file. Existing data stays in place, and duplicates are skipped.',
-                style: TextStyle(
-                    color: AppColors.light, fontSize: AppSizes.textSub),
               ),
               const SizedBox(height: AppSizes.s),
               ElevatedButton(
@@ -142,7 +129,7 @@ class SettingsScreen extends StatelessWidget {
                     onConfirm: () => state.saveNewTemplates(newTemplates),
                   );
                 },
-                child: const Text('Import data',
+                child: const Text('Import JSON',
                     style: TextStyle(color: AppColors.white)),
               ),
             ],
