@@ -25,14 +25,6 @@ class TemplatesScreen extends StatefulWidget {
 class _TemplatesScreenState extends State<TemplatesScreen> {
   ChecklistTemplate? _viewingTemplate;
 
-  List<ChecklistTemplate> _sorted(List<ChecklistTemplate> templates) {
-    final favs = templates.where((t) => t.favorite).toList()
-      ..sort((a, b) => a.label.compareTo(b.label));
-    final others = templates.where((t) => !t.favorite).toList()
-      ..sort((a, b) => a.label.compareTo(b.label));
-    return [...favs, ...others];
-  }
-
   Future<void> _instantiateTemplate(
     BuildContext context,
     ChecklistTemplate template,
@@ -125,7 +117,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                 ),
               )
             else
-              ..._sorted(state.templates).map((t) => _TemplateCard(
+              ...state.sortedTemplates.map((t) => _TemplateCard(
                     template: t,
                     completionCount: state.completionCountForTemplate(t.id),
                     onInstantiate: () => _instantiateTemplate(context, t),

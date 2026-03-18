@@ -78,8 +78,69 @@ void main() {
     await state.completeChecklist(checklist.id);
 
     expect(state.checklists, isEmpty);
+    expect(state.getTemplateById(template.id).usageCount, 1);
     expect(state.completionCountForTemplate(template.id), 1);
     expect(state.historyEntries.single.templateLabel, 'Evening');
+  });
+
+  test('saving a new checklist increments the template usage count', () async {
+    final state = AppState();
+    final template = state.buildTemplate(
+      templateId: 'template-usage',
+      templateName: 'Lunch',
+      isFavorite: false,
+      taskLabels: ['Food'],
+    );
+
+    await state.saveTemplate(template);
+
+    final checklist = state.instantiateTemplate(template);
+    await state.saveChecklist(checklist);
+
+    expect(state.getTemplateById(template.id).usageCount, 1);
+    expect(state.checklists.single.template.usageCount, 1);
+  });
+
+  test('templates are sorted by favorite, then usage count, then label',
+      () async {
+    final state = AppState();
+    final templates = [
+      ChecklistTemplate(
+        id: 'template-b',
+        label: 'Beta',
+        favorite: false,
+        usageCount: 2,
+        stacks: const [],
+      ),
+      ChecklistTemplate(
+        id: 'template-a',
+        label: 'Alpha',
+        favorite: false,
+        usageCount: 2,
+        stacks: const [],
+      ),
+      ChecklistTemplate(
+        id: 'template-fav-low',
+        label: 'Fav low',
+        favorite: true,
+        usageCount: 1,
+        stacks: const [],
+      ),
+      ChecklistTemplate(
+        id: 'template-fav-high',
+        label: 'Fav high',
+        favorite: true,
+        usageCount: 3,
+        stacks: const [],
+      ),
+    ];
+
+    await state.saveNewTemplates(templates);
+
+    expect(
+      state.sortedTemplates.map((template) => template.id).toList(),
+      ['template-fav-high', 'template-fav-low', 'template-a', 'template-b'],
+    );
   });
 
   test('saving a grouped template syncs active checklist sections by task id',

@@ -14,6 +14,18 @@ class AppState extends ChangeNotifier {
   List<Checklist> get checklists => List.unmodifiable(_checklists);
   List<ChecklistHistoryEntry> get historyEntries =>
       List.unmodifiable(_historyEntries);
+  List<ChecklistTemplate> get sortedTemplates {
+    final sorted = [..._templates];
+    sorted.sort((a, b) {
+      if (a.favorite != b.favorite) {
+        return a.favorite ? -1 : 1;
+      }
+      final usageCompare = b.usageCount.compareTo(a.usageCount);
+      if (usageCompare != 0) return usageCompare;
+      return a.label.compareTo(b.label);
+    });
+    return List.unmodifiable(sorted);
+  }
 
   Future<void> init() async {
     _templates = await StorageService.loadTemplates();
@@ -37,13 +49,21 @@ class AppState extends ChangeNotifier {
     List<ChecklistTemplate> newTemplates, {
     bool syncActiveChecklists = false,
   }) async {
-    final newIds = {for (final t in newTemplates) t.id};
+    final existingById = {
+      for (final template in _templates) template.id: template
+    };
+    final normalizedTemplates = newTemplates.map((template) {
+      final existing = existingById[template.id];
+      if (existing == null || template.usageCount > 0) return template;
+      return template.copyWith(usageCount: existing.usageCount);
+    }).toList();
+    final newIds = {for (final t in normalizedTemplates) t.id};
     final kept = _templates.where((t) => !newIds.contains(t.id)).toList();
-    kept.addAll(newTemplates);
+    kept.addAll(normalizedTemplates);
     _templates = kept;
     await StorageService.saveTemplates(_templates);
     if (syncActiveChecklists) {
-      for (final template in newTemplates) {
+      for (final template in normalizedTemplates) {
         _syncActiveChecklistsForTemplate(template);
       }
       await StorageService.saveChecklists(_checklists);
@@ -60,8 +80,30 @@ class AppState extends ChangeNotifier {
   // ── Checklist mutations ─────────────────────────────────────────────────────
 
   Future<void> saveChecklist(Checklist checklist) async {
+    final isNewChecklist = !_checklists.any((c) => c.id == checklist.id);
+    var storedChecklist = checklist;
+
+    if (isNewChecklist) {
+      final templateIndex =
+          _templates.indexWhere((t) => t.id == checklist.template.id);
+      if (templateIndex >= 0) {
+        final updatedTemplate = _templates[templateIndex].copyWith(
+          usageCount: _templates[templateIndex].usageCount + 1,
+        );
+        _templates = _templates.map((template) {
+          return template.id == updatedTemplate.id ? updatedTemplate : template;
+        }).toList();
+        storedChecklist = checklist.copyWith(
+          template: checklist.template.copyWith(
+            usageCount: updatedTemplate.usageCount,
+          ),
+        );
+        await StorageService.saveTemplates(_templates);
+      }
+    }
+
     final without = _checklists.where((c) => c.id != checklist.id).toList();
-    _checklists = [...without, checklist];
+    _checklists = [...without, storedChecklist];
     await StorageService.saveChecklists(_checklists);
     notifyListeners();
   }

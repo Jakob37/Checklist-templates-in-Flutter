@@ -59,24 +59,28 @@ class ChecklistTemplate {
   final String label;
   final List<TaskStack> stacks;
   final bool favorite;
+  final int usageCount;
 
   ChecklistTemplate({
     required this.id,
     required this.label,
     required this.stacks,
     required this.favorite,
+    this.usageCount = 0,
   });
 
   ChecklistTemplate copyWith({
     String? label,
     List<TaskStack>? stacks,
     bool? favorite,
+    int? usageCount,
   }) =>
       ChecklistTemplate(
         id: id,
         label: label ?? this.label,
         stacks: stacks ?? this.stacks,
         favorite: favorite ?? this.favorite,
+        usageCount: usageCount ?? this.usageCount,
       );
 
   factory ChecklistTemplate.fromJson(Map<String, dynamic> json) =>
@@ -87,6 +91,7 @@ class ChecklistTemplate {
             .map((s) => TaskStack.fromJson(s as Map<String, dynamic>))
             .toList(),
         favorite: json['favorite'] as bool,
+        usageCount: json['usageCount'] as int? ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -94,6 +99,7 @@ class ChecklistTemplate {
         'label': label,
         'stacks': stacks.map((s) => s.toJson()).toList(),
         'favorite': favorite,
+        'usageCount': usageCount,
       };
 
   int get taskCount =>
