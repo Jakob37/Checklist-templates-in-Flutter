@@ -3,12 +3,22 @@ import '../models/checklist.dart';
 import '../models/checklist_history_entry.dart';
 import '../models/checklist_template.dart';
 import '../models/id_gen.dart';
+import '../services/reminder_service.dart';
 import '../services/storage_service.dart';
 
 class AppState extends ChangeNotifier {
+  final ReminderService _reminderService;
+  final DateTime Function() _now;
+
   List<ChecklistTemplate> _templates = [];
   List<Checklist> _checklists = [];
   List<ChecklistHistoryEntry> _historyEntries = [];
+
+  AppState({
+    ReminderService? reminderService,
+    DateTime Function()? now,
+  })  : _reminderService = reminderService ?? const NoOpReminderService(),
+        _now = now ?? DateTime.now;
 
   List<ChecklistTemplate> get templates => List.unmodifiable(_templates);
   List<Checklist> get checklists => List.unmodifiable(_checklists);
@@ -28,9 +38,11 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> init() async {
+    await _reminderService.init();
     _templates = await StorageService.loadTemplates();
     _checklists = await StorageService.loadChecklists();
     _historyEntries = await StorageService.loadHistoryEntries();
+    await _reminderService.syncAllTemplateReminders(_templates);
   }
 
   // ── Template mutations ──────────────────────────────────────────────────────
@@ -54,14 +66,20 @@ class AppState extends ChangeNotifier {
     };
     final normalizedTemplates = newTemplates.map((template) {
       final existing = existingById[template.id];
-      if (existing == null || template.usageCount > 0) return template;
-      return template.copyWith(usageCount: existing.usageCount);
+      final normalizedTemplate = _normalizeTemplateSchedule(template);
+      if (existing == null || normalizedTemplate.usageCount > 0) {
+        return normalizedTemplate;
+      }
+      return normalizedTemplate.copyWith(
+        usageCount: existing.usageCount,
+      );
     }).toList();
     final newIds = {for (final t in normalizedTemplates) t.id};
     final kept = _templates.where((t) => !newIds.contains(t.id)).toList();
     kept.addAll(normalizedTemplates);
     _templates = kept;
     await StorageService.saveTemplates(_templates);
+    await _reminderService.syncAllTemplateReminders(_templates);
     if (syncActiveChecklists) {
       for (final template in normalizedTemplates) {
         _syncActiveChecklistsForTemplate(template);
@@ -74,6 +92,7 @@ class AppState extends ChangeNotifier {
   Future<void> removeTemplate(String id) async {
     _templates = _templates.where((t) => t.id != id).toList();
     await StorageService.saveTemplates(_templates);
+    await _reminderService.cancelTemplateReminder(id);
     notifyListeners();
   }
 
@@ -178,6 +197,49 @@ class AppState extends ChangeNotifier {
 
   int completionCountForTemplate(String templateId) =>
       _historyEntries.where((entry) => entry.templateId == templateId).length;
+
+  Future<bool> requestReminderPermissions() async {
+    return _reminderService.requestPermissions();
+  }
+
+  Future<int> reconcileScheduledTemplates() async {
+    final now = _now();
+    final todayKey = _dateKey(now);
+    final dueTemplates = _templates.where((template) {
+      final schedule = template.dailySchedule;
+      return schedule != null &&
+          _isScheduleDue(schedule, now) &&
+          schedule.lastInstantiatedOn != todayKey;
+    }).toList();
+
+    var instantiatedCount = 0;
+
+    for (final template in dueTemplates) {
+      final selectedOptionalStackIds = _selectedOptionalStackIdsForSchedule(
+        template,
+      );
+      final checklist = instantiateTemplateWithSelectedOptionalGroups(
+        template,
+        selectedOptionalStackIds: selectedOptionalStackIds,
+      );
+      await saveChecklist(checklist);
+
+      final refreshedTemplate = getTemplateById(template.id);
+      final refreshedSchedule = refreshedTemplate.dailySchedule;
+      if (refreshedSchedule == null) continue;
+
+      await saveTemplate(
+        refreshedTemplate.copyWith(
+          dailySchedule: refreshedSchedule.copyWith(
+            lastInstantiatedOn: todayKey,
+          ),
+        ),
+      );
+      instantiatedCount++;
+    }
+
+    return instantiatedCount;
+  }
 
   // ── Template factory helpers ─────────────────────────────────────────────────
 
@@ -331,5 +393,56 @@ class AppState extends ChangeNotifier {
       template: syncedTemplate,
       checkboxes: syncedCheckboxes,
     );
+  }
+
+  ChecklistTemplate _normalizeTemplateSchedule(ChecklistTemplate template) {
+    final schedule = template.dailySchedule;
+    if (schedule == null) return template;
+
+    final optionalStackIds = template.stacks
+        .where((stack) => stack.isOptional)
+        .map((stack) => stack.id)
+        .toSet();
+
+    final normalizedSelectedOptionalStackIds = schedule.selectedOptionalStackIds
+        .where(optionalStackIds.contains)
+        .toList();
+
+    return template.copyWith(
+      dailySchedule: schedule.copyWith(
+        selectedOptionalStackIds: normalizedSelectedOptionalStackIds,
+      ),
+    );
+  }
+
+  Set<String> _selectedOptionalStackIdsForSchedule(ChecklistTemplate template) {
+    final schedule = template.dailySchedule;
+    if (schedule == null) return const {};
+
+    final optionalStackIds = template.stacks
+        .where((stack) => stack.isOptional)
+        .map((stack) => stack.id)
+        .toSet();
+
+    return schedule.selectedOptionalStackIds
+        .where(optionalStackIds.contains)
+        .toSet();
+  }
+
+  bool _isScheduleDue(DailyTemplateSchedule schedule, DateTime now) {
+    final scheduledTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      schedule.hour,
+      schedule.minute,
+    );
+    return !scheduledTime.isAfter(now);
+  }
+
+  String _dateKey(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }

@@ -37,6 +37,10 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
 
   late String _templateId;
   bool _isFavorite = false;
+  bool _dailyReminderEnabled = false;
+  TimeOfDay _dailyReminderTime = const TimeOfDay(hour: 9, minute: 0);
+  Set<String> _scheduledOptionalStackIds = {};
+  String? _lastScheduledInstantiationDate;
   List<TaskStack> _stacks = [];
 
   @override
@@ -59,6 +63,16 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
     _disposeFocusNodes();
     _templateId = template.id;
     _isFavorite = template.favorite;
+    _dailyReminderEnabled = template.dailySchedule != null;
+    _dailyReminderTime = TimeOfDay(
+      hour: template.dailySchedule?.hour ?? 9,
+      minute: template.dailySchedule?.minute ?? 0,
+    );
+    _scheduledOptionalStackIds = {
+      ...?template.dailySchedule?.selectedOptionalStackIds,
+    };
+    _lastScheduledInstantiationDate =
+        template.dailySchedule?.lastInstantiatedOn;
     _nameController.text = template.label;
     _stacks = template.stacks
         .map(
@@ -89,6 +103,10 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
     _disposeFocusNodes();
     _templateId = generateId('template');
     _isFavorite = false;
+    _dailyReminderEnabled = false;
+    _dailyReminderTime = const TimeOfDay(hour: 9, minute: 0);
+    _scheduledOptionalStackIds = {};
+    _lastScheduledInstantiationDate = null;
     _nameController.clear();
     _stacks = [_buildEmptyStack()];
   }
@@ -142,6 +160,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       final item = copy.removeAt(index);
       copy.insert(newIndex, item);
       _stacks = copy;
+      _syncScheduledOptionalStackIds();
     });
   }
 
@@ -152,12 +171,77 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       final copy = [..._stacks];
       copy[index] = copy[index].copyWith(isOptional: isOptional);
       _stacks = copy;
+      if (isOptional && _dailyReminderEnabled) {
+        _scheduledOptionalStackIds = {
+          ..._scheduledOptionalStackIds,
+          stackId,
+        };
+      }
+      _syncScheduledOptionalStackIds();
     });
   }
 
   void _toggleFavorite() {
     setState(() {
       _isFavorite = !_isFavorite;
+    });
+  }
+
+  List<TaskStack> get _optionalStacks =>
+      _stacks.where((stack) => stack.isOptional).toList();
+
+  void _syncScheduledOptionalStackIds() {
+    final validIds = {
+      for (final stack in _optionalStacks) stack.id,
+    };
+    _scheduledOptionalStackIds =
+        _scheduledOptionalStackIds.where(validIds.contains).toSet();
+  }
+
+  void _toggleDailyReminder(bool enabled) {
+    setState(() {
+      _dailyReminderEnabled = enabled;
+      if (enabled && _scheduledOptionalStackIds.isEmpty) {
+        _scheduledOptionalStackIds = {
+          for (final stack in _optionalStacks) stack.id,
+        };
+      }
+      if (!enabled) {
+        _lastScheduledInstantiationDate = null;
+      }
+    });
+  }
+
+  Future<void> _pickDailyReminderTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _dailyReminderTime,
+    );
+    if (selected == null) return;
+
+    setState(() {
+      _dailyReminderTime = selected;
+    });
+  }
+
+  Future<void> _configureScheduledOptionalGroups() async {
+    final optionalStacks = _optionalStacks;
+    if (optionalStacks.isEmpty) return;
+
+    final selectedOptionalStackIds = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => _ScheduledOptionalGroupsDialog(
+        templateName: _nameController.text.trim().isEmpty
+            ? 'Daily reminder'
+            : _nameController.text.trim(),
+        optionalStacks: optionalStacks,
+        initialSelection: _scheduledOptionalStackIds,
+      ),
+    );
+    if (!mounted || selectedOptionalStackIds == null) return;
+
+    setState(() {
+      _scheduledOptionalStackIds = selectedOptionalStackIds;
     });
   }
 
@@ -176,6 +260,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
         copy.insert(insertIndex, newStack);
       }
       _stacks = copy;
+      _syncScheduledOptionalStackIds();
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -199,6 +284,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       if (_stacks.length == 1) {
         _stackFocusNodes.putIfAbsent(_stacks.first.id, FocusNode.new);
       }
+      _syncScheduledOptionalStackIds();
     });
   }
 
@@ -213,6 +299,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
           tasks: [...stack.tasks, Task(id: taskId, label: '')],
         );
       }).toList();
+      _syncScheduledOptionalStackIds();
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -235,6 +322,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       updatedStacks[stackIndex] =
           updatedStacks[stackIndex].copyWith(tasks: updatedTasks);
       _stacks = updatedStacks;
+      _syncScheduledOptionalStackIds();
     });
   }
 
@@ -248,6 +336,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
           tasks: stack.tasks.where((task) => task.id != taskId).toList(),
         );
       }).toList();
+      _syncScheduledOptionalStackIds();
     });
   }
 
@@ -267,6 +356,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       updatedStacks[stackIndex] =
           updatedStacks[stackIndex].copyWith(tasks: updatedTasks);
       _stacks = updatedStacks;
+      _syncScheduledOptionalStackIds();
     });
   }
 
@@ -285,17 +375,48 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
         .where((stack) => stack.tasks.isNotEmpty)
         .toList();
 
+    final normalizedOptionalStackIds = stacks
+        .where((stack) => stack.isOptional)
+        .map((stack) => stack.id)
+        .toSet();
+
+    if (_dailyReminderEnabled) {
+      final granted = await state.requestReminderPermissions();
+      if (!granted && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Notifications are disabled. The checklist will still auto-create when the app opens after the scheduled time.',
+            ),
+          ),
+        );
+      }
+    }
+
     final template = ChecklistTemplate(
       id: _templateId,
       label: _nameController.text.trim(),
       favorite: _isFavorite,
       stacks: stacks,
+      dailySchedule: _dailyReminderEnabled
+          ? DailyTemplateSchedule(
+              hour: _dailyReminderTime.hour,
+              minute: _dailyReminderTime.minute,
+              selectedOptionalStackIds: _scheduledOptionalStackIds
+                  .where(normalizedOptionalStackIds.contains)
+                  .toList(),
+              lastInstantiatedOn: _lastScheduledInstantiationDate,
+            )
+          : null,
     );
 
     await state.saveTemplate(
       template,
       syncActiveChecklists: widget.syncActiveChecklists,
     );
+    if (template.dailySchedule != null) {
+      await state.reconcileScheduledTemplates();
+    }
 
     if (mounted) context.pop();
   }
@@ -392,6 +513,68 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                 border: InputBorder.none,
               ),
               onChanged: (_) => setState(() {}),
+            ),
+          ),
+          BluePanel(
+            margin: const EdgeInsets.fromLTRB(
+              AppSizes.s,
+              AppSizes.s,
+              AppSizes.s,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SwitchListTile(
+                  value: _dailyReminderEnabled,
+                  contentPadding: EdgeInsets.zero,
+                  activeThumbColor: AppColors.highlight2,
+                  title: const Text(
+                    'Daily reminder',
+                    style: TextStyle(
+                      color: AppColors.light,
+                      fontSize: AppSizes.textMinor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Sends a daily notification and auto-creates the checklist when the app opens after that time.',
+                    style: TextStyle(
+                      color: AppColors.faint,
+                      fontSize: AppSizes.textSub,
+                    ),
+                  ),
+                  onChanged: _toggleDailyReminder,
+                ),
+                if (_dailyReminderEnabled) ...[
+                  const SizedBox(height: AppSizes.s),
+                  OutlinedButton.icon(
+                    onPressed: _pickDailyReminderTime,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.border),
+                      foregroundColor: AppColors.light,
+                    ),
+                    icon: const Icon(Icons.schedule_outlined),
+                    label: Text(
+                      'Time: ${_dailyReminderTime.format(context)}',
+                    ),
+                  ),
+                  if (_optionalStacks.isNotEmpty) ...[
+                    const SizedBox(height: AppSizes.s),
+                    OutlinedButton.icon(
+                      onPressed: _configureScheduledOptionalGroups,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
+                        foregroundColor: AppColors.light,
+                      ),
+                      icon: const Icon(Icons.checklist_rtl_outlined),
+                      label: Text(
+                        'Included optional groups: ${_scheduledOptionalStackIds.where((id) => _optionalStacks.any((stack) => stack.id == id)).length}/${_optionalStacks.length}',
+                      ),
+                    ),
+                  ],
+                ],
+              ],
             ),
           ),
           Padding(
@@ -898,6 +1081,94 @@ class _TaskRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ScheduledOptionalGroupsDialog extends StatefulWidget {
+  final String templateName;
+  final List<TaskStack> optionalStacks;
+  final Set<String> initialSelection;
+
+  const _ScheduledOptionalGroupsDialog({
+    required this.templateName,
+    required this.optionalStacks,
+    required this.initialSelection,
+  });
+
+  @override
+  State<_ScheduledOptionalGroupsDialog> createState() =>
+      _ScheduledOptionalGroupsDialogState();
+}
+
+class _ScheduledOptionalGroupsDialogState
+    extends State<_ScheduledOptionalGroupsDialog> {
+  late final Set<String> _selectedStackIds = {
+    ...widget.initialSelection,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.secondary,
+      title: Text(
+        widget.templateName,
+        style: const TextStyle(color: AppColors.light),
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...widget.optionalStacks.map((stack) {
+              final label = stack.hasVisibleLabel
+                  ? stack.trimmedLabel
+                  : 'Additional group';
+              return CheckboxListTile(
+                value: _selectedStackIds.contains(stack.id),
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.highlight2,
+                checkColor: AppColors.white,
+                title: Text(
+                  label,
+                  style: const TextStyle(color: AppColors.light),
+                ),
+                subtitle: Text(
+                  '${stack.tasks.length} ${stack.tasks.length == 1 ? 'checkbox' : 'checkboxes'}',
+                  style: const TextStyle(color: AppColors.faint),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    if (value ?? false) {
+                      _selectedStackIds.add(stack.id);
+                    } else {
+                      _selectedStackIds.remove(stack.id);
+                    }
+                  });
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: AppColors.light),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.secondary,
+            foregroundColor: AppColors.light,
+          ),
+          onPressed: () => Navigator.of(context).pop(_selectedStackIds),
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

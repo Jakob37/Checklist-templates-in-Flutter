@@ -355,4 +355,87 @@ void main() {
       ['task-wallet', 'task-phone'],
     );
   });
+
+  test('scheduled templates auto-instantiate once per day after the set time',
+      () async {
+    var now = DateTime(2026, 3, 18, 9, 30);
+    final state = AppState(now: () => now);
+    final template = ChecklistTemplate(
+      id: 'template-7',
+      label: 'Morning',
+      favorite: false,
+      stacks: [
+        TaskStack(
+          id: 'stack-main',
+          label: '',
+          tasks: [
+            Task(id: 'task-keys', label: 'Keys'),
+          ],
+        ),
+      ],
+      dailySchedule: DailyTemplateSchedule(
+        hour: 9,
+        minute: 0,
+      ),
+    );
+
+    await state.saveTemplate(template);
+
+    expect(await state.reconcileScheduledTemplates(), 1);
+    expect(await state.reconcileScheduledTemplates(), 0);
+    expect(state.checklists, hasLength(1));
+    expect(
+      state.getTemplateById(template.id).dailySchedule?.lastInstantiatedOn,
+      '2026-03-18',
+    );
+
+    now = DateTime(2026, 3, 19, 9, 1);
+
+    expect(await state.reconcileScheduledTemplates(), 1);
+    expect(state.checklists, hasLength(2));
+  });
+
+  test('scheduled templates honor saved optional group selection', () async {
+    final state = AppState(now: () => DateTime(2026, 3, 18, 9, 30));
+    final template = ChecklistTemplate(
+      id: 'template-8',
+      label: 'Trip prep',
+      favorite: false,
+      stacks: [
+        TaskStack(
+          id: 'stack-required',
+          label: 'Always',
+          tasks: [
+            Task(id: 'task-wallet', label: 'Wallet'),
+          ],
+        ),
+        TaskStack(
+          id: 'stack-rain',
+          label: 'Rainy weather',
+          isOptional: true,
+          tasks: [
+            Task(id: 'task-jacket', label: 'Rain jacket'),
+          ],
+        ),
+      ],
+      dailySchedule: DailyTemplateSchedule(
+        hour: 9,
+        minute: 0,
+        selectedOptionalStackIds: const [],
+      ),
+    );
+
+    await state.saveTemplate(template);
+    await state.reconcileScheduledTemplates();
+
+    final checklist = state.checklists.single;
+
+    expect(checklist.template.stacks.map((stack) => stack.id).toList(), [
+      'stack-required',
+    ]);
+    expect(
+      checklist.checkboxes.map((box) => box.taskId).toList(),
+      ['task-wallet'],
+    );
+  });
 }

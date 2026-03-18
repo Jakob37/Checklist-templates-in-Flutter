@@ -332,6 +332,28 @@ class _TemplateCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (template.dailySchedule != null) ...[
+                        const SizedBox(height: AppSizes.xs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.s,
+                            vertical: AppSizes.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.borderRadius),
+                          ),
+                          child: Text(
+                            'Daily ${_formatScheduleTime(template.dailySchedule!)}',
+                            style: const TextStyle(
+                              color: AppColors.highlight1,
+                              fontSize: AppSizes.textSub,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -387,5 +409,11 @@ class _TemplateCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatScheduleTime(DailyTemplateSchedule schedule) {
+    final hour = schedule.hour.toString().padLeft(2, '0');
+    final minute = schedule.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
