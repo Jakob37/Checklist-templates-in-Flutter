@@ -13,6 +13,10 @@ import '../theme/app_sizes.dart';
 final GoRouter appRouter = GoRouter(
   initialLocation: '/templates',
   routes: [
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const _SettingsPage(),
+    ),
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
@@ -40,10 +44,6 @@ final GoRouter appRouter = GoRouter(
           path: '/checklists',
           builder: (context, state) => const ChecklistsScreen(),
         ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
-        ),
       ],
     ),
   ],
@@ -55,8 +55,12 @@ class MainShell extends StatelessWidget {
 
   int _locationToIndex(String location) {
     if (location.startsWith('/checklists')) return 1;
-    if (location.startsWith('/settings')) return 2;
     return 0;
+  }
+
+  String _titleForLocation(String location) {
+    if (location.startsWith('/checklists')) return 'Actions';
+    return 'Templates';
   }
 
   @override
@@ -65,42 +69,60 @@ class MainShell extends StatelessWidget {
     final index = _locationToIndex(location);
     final showBottomNav = !location.startsWith('/templates/edit');
 
+    if (!showBottomNav) {
+      return Scaffold(body: SafeArea(child: child));
+    }
+
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_titleForLocation(location)),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: () => context.push('/settings'),
+            icon: const FaIcon(
+              FontAwesomeIcons.gear,
+              size: AppSizes.iconMedium,
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(child: child),
-      bottomNavigationBar: showBottomNav
-          ? NavigationBar(
-              selectedIndex: index,
-              onDestinationSelected: (i) {
-                switch (i) {
-                  case 0:
-                    context.go('/templates');
-                    break;
-                  case 1:
-                    context.go('/checklists');
-                    break;
-                  case 2:
-                    context.go('/settings');
-                    break;
-                }
-              },
-              destinations: const [
-                NavigationDestination(
-                  icon:
-                      FaIcon(FontAwesomeIcons.list, size: AppSizes.iconMedium),
-                  label: 'Templates',
-                ),
-                NavigationDestination(
-                  icon: _ChecklistNavIcon(),
-                  label: 'Checklists',
-                ),
-                NavigationDestination(
-                  icon:
-                      FaIcon(FontAwesomeIcons.gear, size: AppSizes.iconMedium),
-                  label: 'Settings',
-                ),
-              ],
-            )
-          : null,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (i) {
+          switch (i) {
+            case 0:
+              context.go('/templates');
+              break;
+            case 1:
+              context.go('/checklists');
+              break;
+          }
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: FaIcon(FontAwesomeIcons.list, size: AppSizes.iconMedium),
+            label: 'Templates',
+          ),
+          NavigationDestination(
+            icon: _ChecklistNavIcon(),
+            label: 'Actions',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsPage extends StatelessWidget {
+  const _SettingsPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: const SafeArea(child: SettingsScreen()),
     );
   }
 }

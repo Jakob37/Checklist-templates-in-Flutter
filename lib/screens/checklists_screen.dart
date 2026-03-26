@@ -24,7 +24,7 @@ class ChecklistsScreen extends StatelessWidget {
     return ListView(
       children: [
         ScreenHeader(
-          title: 'Active checklists',
+          title: 'Actions',
           icon: const FaIcon(
             FontAwesomeIcons.squareCheck,
             size: AppSizes.iconMedium,
@@ -40,7 +40,7 @@ class ChecklistsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'No active checklists',
+                  'No active actions',
                   style: TextStyle(
                     color: AppColors.light,
                     fontSize: AppSizes.textMinor,
