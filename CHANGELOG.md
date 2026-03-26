@@ -2,6 +2,11 @@
 
 All notable user-facing changes to this project should be recorded here.
 
+## v1.1.1
+
+- Standardized the in-app changelog version pill styling.
+- Replaced deprecated share-plus API usage to clear analyzer findings.
+
 ## v1.1.0
 
 - Made the settings version badge open the GitHub changelog.

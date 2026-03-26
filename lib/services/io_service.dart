@@ -8,7 +8,8 @@ import '../models/export_bundle.dart';
 class IoService {
   static Future<void> exportJson(ExportBundle bundle) async {
     final jsonStr = jsonEncode(bundle.toJson());
-    final fileName = 'Checklist-templates-${DateTime.now().millisecondsSinceEpoch}.json';
+    final fileName =
+        'Checklist-templates-${DateTime.now().millisecondsSinceEpoch}.json';
 
     if (Platform.isAndroid) {
       final dir = await getDownloadsDirectory();
@@ -23,7 +24,12 @@ class IoService {
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/$fileName');
     await file.writeAsString(jsonStr);
-    await Share.shareXFiles([XFile(file.path)], text: fileName);
+    await SharePlus.instance.share(
+      ShareParams(
+        files: <XFile>[XFile(file.path)],
+        text: fileName,
+      ),
+    );
   }
 
   static Future<ExportBundle?> importJson() async {

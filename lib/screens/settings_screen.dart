@@ -135,9 +135,8 @@ class SettingsScreen extends StatelessWidget {
                   final nbrExists =
                       result.templates.length - newTemplates.length;
                   final s = newTemplates.length != 1 ? 's' : '';
-                  final alreadyExistsStr = nbrExists > 0
-                      ? ' ($nbrExists already exists)'
-                      : '';
+                  final alreadyExistsStr =
+                      nbrExists > 0 ? ' ($nbrExists already exists)' : '';
 
                   if (newTemplates.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -190,13 +189,24 @@ class _VersionBadge extends StatelessWidget {
             border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppSizes.borderRadius),
           ),
-          child: Text(
-            version,
-            style: const TextStyle(
-              color: AppColors.light,
-              fontSize: AppSizes.textSub,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                version,
+                style: const TextStyle(
+                  color: AppColors.light,
+                  fontSize: AppSizes.textSub,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.open_in_new,
+                size: 14,
+                color: AppColors.light,
+              ),
+            ],
           ),
         ),
       ),
