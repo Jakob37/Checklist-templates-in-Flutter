@@ -2,6 +2,10 @@
 
 All notable user-facing changes to this project should be recorded here.
 
+## v1.3.0
+
+- Added versioned full-app JSON snapshots with `mind`-style automatic local backups, restore-from-backup support, and a Supabase-ready settings section that stays dormant until the app is launched with credentials.
+
 ## v1.2.0
 
 - Moved settings into a full page behind the top-right cog and kept the app focused on `Templates` and `Actions`.
