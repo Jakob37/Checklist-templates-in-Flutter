@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../app_version.dart';
 import '../models/export_bundle.dart';
 import '../services/io_service.dart';
 import '../state/app_state.dart';
@@ -12,22 +15,41 @@ import '../widgets/screen_header.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  Future<void> _openChangelog(BuildContext context) async {
+    final bool didLaunch = await launchUrl(
+      Uri.parse(kAppChangelogUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!didLaunch && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open changelog.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        const ScreenHeader(
+        ScreenHeader(
           title: 'Settings',
-          icon: Icon(
+          icon: const Icon(
             Icons.settings_outlined,
             size: AppSizes.iconMedium,
             color: AppColors.light,
           ),
-          trailing: _VersionBadge(version: 'v1.0.0'),
+          trailing: _VersionBadge(
+            version: kAppVersionLabel,
+            onTap: () => _openChangelog(context),
+          ),
         ),
         BluePanel(
-          margin:
-              const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
+          margin: const EdgeInsets.fromLTRB(
+            AppSizes.s,
+            AppSizes.s,
+            AppSizes.s,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -63,15 +85,21 @@ class SettingsScreen extends StatelessWidget {
                     }
                   }
                 },
-                child: const Text('Export JSON',
-                    style: TextStyle(color: AppColors.white)),
+                child: const Text(
+                  'Export JSON',
+                  style: TextStyle(color: AppColors.white),
+                ),
               ),
             ],
           ),
         ),
         BluePanel(
-          margin:
-              const EdgeInsets.fromLTRB(AppSizes.s, AppSizes.s, AppSizes.s, 0),
+          margin: const EdgeInsets.fromLTRB(
+            AppSizes.s,
+            AppSizes.s,
+            AppSizes.s,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -107,8 +135,9 @@ class SettingsScreen extends StatelessWidget {
                   final nbrExists =
                       result.templates.length - newTemplates.length;
                   final s = newTemplates.length != 1 ? 's' : '';
-                  final alreadyExistsStr =
-                      nbrExists > 0 ? ' ($nbrExists already exists)' : '';
+                  final alreadyExistsStr = nbrExists > 0
+                      ? ' ($nbrExists already exists)'
+                      : '';
 
                   if (newTemplates.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -125,8 +154,10 @@ class SettingsScreen extends StatelessWidget {
                     onConfirm: () => state.saveNewTemplates(newTemplates),
                   );
                 },
-                child: const Text('Import JSON',
-                    style: TextStyle(color: AppColors.white)),
+                child: const Text(
+                  'Import JSON',
+                  style: TextStyle(color: AppColors.white),
+                ),
               ),
             ],
           ),
@@ -137,28 +168,36 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _VersionBadge extends StatelessWidget {
-  final String version;
+  const _VersionBadge({required this.version, required this.onTap});
 
-  const _VersionBadge({required this.version});
+  final String version;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.s,
-        vertical: AppSizes.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        border: Border.all(color: AppColors.border),
+    return Tooltip(
+      message: 'Open changelog',
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),
-      ),
-      child: Text(
-        version,
-        style: const TextStyle(
-          color: AppColors.light,
-          fontSize: AppSizes.textSub,
-          fontWeight: FontWeight.w600,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.s,
+            vertical: AppSizes.xs,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+          ),
+          child: Text(
+            version,
+            style: const TextStyle(
+              color: AppColors.light,
+              fontSize: AppSizes.textSub,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );

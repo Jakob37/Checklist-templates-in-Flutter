@@ -16,3 +16,6 @@ Do this by default unless the user explicitly asks you not to commit or not to p
 - Do not revert or overwrite unrelated user changes.
 - If verification fails, report the failure before committing.
 - If push fails because of authentication, network, or remote state, report the exact blocker.
+- Every committed change should include a version bump in `pubspec.yaml`.
+- Keep any in-app version file in sync with `pubspec.yaml`.
+- Keep `CHANGELOG.md` updated in the same change.
