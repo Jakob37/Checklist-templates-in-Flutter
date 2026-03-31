@@ -68,9 +68,6 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
       hour: template.dailySchedule?.hour ?? 9,
       minute: template.dailySchedule?.minute ?? 0,
     );
-    _scheduledOptionalStackIds = {
-      ...?template.dailySchedule?.selectedOptionalStackIds,
-    };
     _lastScheduledInstantiationDate =
         template.dailySchedule?.lastInstantiatedOn;
     _nameController.text = template.label;
@@ -83,9 +80,15 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                 .map((task) => Task(id: task.id, label: task.label))
                 .toList(),
             isOptional: stack.isOptional,
+            optionalDefaultIncluded: stack.optionalDefaultIncluded,
           ),
         )
         .toList();
+    _scheduledOptionalStackIds = template.dailySchedule == null
+        ? _defaultOptionalStackIds
+        : {
+            ...?template.dailySchedule?.selectedOptionalStackIds,
+          };
 
     if (_stacks.isEmpty) {
       _stacks = [_buildEmptyStack()];
@@ -167,15 +170,48 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   void _toggleStackOptional(String stackId, bool isOptional) {
     final index = _stacks.indexWhere((stack) => stack.id == stackId);
     if (index < 0) return;
+    final TaskStack currentStack = _stacks[index];
     setState(() {
       final copy = [..._stacks];
-      copy[index] = copy[index].copyWith(isOptional: isOptional);
+      copy[index] = currentStack.copyWith(
+        isOptional: isOptional,
+        optionalDefaultIncluded: isOptional
+            ? (currentStack.isOptional
+                ? currentStack.optionalDefaultIncluded
+                : true)
+            : false,
+      );
       _stacks = copy;
-      if (isOptional && _dailyReminderEnabled) {
-        _scheduledOptionalStackIds = {
-          ..._scheduledOptionalStackIds,
-          stackId,
-        };
+      if (_dailyReminderEnabled) {
+        if (copy[index].optionalDefaultIncluded) {
+          _scheduledOptionalStackIds = {
+            ..._scheduledOptionalStackIds,
+            stackId,
+          };
+        } else {
+          _scheduledOptionalStackIds.remove(stackId);
+        }
+      }
+      _syncScheduledOptionalStackIds();
+    });
+  }
+
+  void _toggleStackOptionalDefault(String stackId, bool included) {
+    final index = _stacks.indexWhere((stack) => stack.id == stackId);
+    if (index < 0) return;
+    setState(() {
+      final copy = [..._stacks];
+      copy[index] = copy[index].copyWith(optionalDefaultIncluded: included);
+      _stacks = copy;
+      if (_dailyReminderEnabled) {
+        if (included) {
+          _scheduledOptionalStackIds = {
+            ..._scheduledOptionalStackIds,
+            stackId,
+          };
+        } else {
+          _scheduledOptionalStackIds.remove(stackId);
+        }
       }
       _syncScheduledOptionalStackIds();
     });
@@ -190,6 +226,11 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
   List<TaskStack> get _optionalStacks =>
       _stacks.where((stack) => stack.isOptional).toList();
 
+  Set<String> get _defaultOptionalStackIds => {
+        for (final stack in _optionalStacks)
+          if (stack.optionalDefaultIncluded) stack.id,
+      };
+
   void _syncScheduledOptionalStackIds() {
     final validIds = {
       for (final stack in _optionalStacks) stack.id,
@@ -202,9 +243,7 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
     setState(() {
       _dailyReminderEnabled = enabled;
       if (enabled && _scheduledOptionalStackIds.isEmpty) {
-        _scheduledOptionalStackIds = {
-          for (final stack in _optionalStacks) stack.id,
-        };
+        _scheduledOptionalStackIds = _defaultOptionalStackIds;
       }
       if (!enabled) {
         _lastScheduledInstantiationDate = null;
@@ -537,13 +576,6 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  subtitle: const Text(
-                    'Sends a daily notification and auto-creates the checklist when the app opens after that time.',
-                    style: TextStyle(
-                      color: AppColors.faint,
-                      fontSize: AppSizes.textSub,
-                    ),
-                  ),
                   onChanged: _toggleDailyReminder,
                 ),
                 if (_dailyReminderEnabled) ...[
@@ -630,10 +662,13 @@ class _MakeTemplateScreenState extends State<MakeTemplateScreen> {
                         stack.tasks.isNotEmpty ||
                         stack.trimmedLabel.isNotEmpty,
                     isOptional: stack.isOptional,
+                    optionalDefaultIncluded: stack.optionalDefaultIncluded,
                     onLabelChanged: (value) =>
                         _renameStackLabel(stack.id, value),
                     onOptionalChanged: (value) =>
                         _toggleStackOptional(stack.id, value),
+                    onOptionalDefaultChanged: (value) =>
+                        _toggleStackOptionalDefault(stack.id, value),
                     onMoveUp: () => _moveStack(index, -1),
                     onMoveDown: () => _moveStack(index, 1),
                     onRemove: () => _removeStack(stack.id),
@@ -733,8 +768,10 @@ class _StackEditorCard extends StatelessWidget {
   final bool canMoveDown;
   final bool canRemove;
   final bool isOptional;
+  final bool optionalDefaultIncluded;
   final ValueChanged<String> onLabelChanged;
   final ValueChanged<bool> onOptionalChanged;
+  final ValueChanged<bool> onOptionalDefaultChanged;
   final VoidCallback onMoveUp;
   final VoidCallback onMoveDown;
   final VoidCallback onRemove;
@@ -755,8 +792,10 @@ class _StackEditorCard extends StatelessWidget {
     required this.canMoveDown,
     required this.canRemove,
     required this.isOptional,
+    required this.optionalDefaultIncluded,
     required this.onLabelChanged,
     required this.onOptionalChanged,
+    required this.onOptionalDefaultChanged,
     required this.onMoveUp,
     required this.onMoveDown,
     required this.onRemove,
@@ -902,6 +941,29 @@ class _StackEditorCard extends StatelessWidget {
               onChanged: onOptionalChanged,
             ),
           ),
+          if (isOptional) ...[
+            const SizedBox(height: AppSizes.s),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+              ),
+              child: SwitchListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: AppSizes.s),
+                value: optionalDefaultIncluded,
+                activeThumbColor: AppColors.highlight2,
+                title: const Text(
+                  'Default on',
+                  style: TextStyle(
+                    color: AppColors.light,
+                    fontSize: AppSizes.textSub,
+                  ),
+                ),
+                onChanged: onOptionalDefaultChanged,
+              ),
+            ),
+          ],
           const SizedBox(height: AppSizes.s),
           ...stack.tasks.asMap().entries.map((entry) {
             final index = entry.key;

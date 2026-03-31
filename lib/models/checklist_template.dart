@@ -19,24 +19,33 @@ class TaskStack {
   final String label;
   final List<Task> tasks;
   final bool isOptional;
+  final bool optionalDefaultIncluded;
 
   TaskStack({
     required this.id,
     required this.label,
     required this.tasks,
     this.isOptional = false,
+    this.optionalDefaultIncluded = false,
   });
 
   String get trimmedLabel => label.trim();
   bool get hasVisibleLabel =>
       trimmedLabel.isNotEmpty && trimmedLabel.toLowerCase() != 'default';
 
-  TaskStack copyWith({String? label, List<Task>? tasks, bool? isOptional}) =>
+  TaskStack copyWith({
+    String? label,
+    List<Task>? tasks,
+    bool? isOptional,
+    bool? optionalDefaultIncluded,
+  }) =>
       TaskStack(
         id: id,
         label: label ?? this.label,
         tasks: tasks ?? this.tasks,
         isOptional: isOptional ?? this.isOptional,
+        optionalDefaultIncluded:
+            optionalDefaultIncluded ?? this.optionalDefaultIncluded,
       );
 
   factory TaskStack.fromJson(Map<String, dynamic> json) => TaskStack(
@@ -46,6 +55,8 @@ class TaskStack {
             .map((t) => Task.fromJson(t as Map<String, dynamic>))
             .toList(),
         isOptional: json['isOptional'] as bool? ?? false,
+        optionalDefaultIncluded: json['optionalDefaultIncluded'] as bool? ??
+            (json['isOptional'] as bool? ?? false),
       );
 
   Map<String, dynamic> toJson() => {
@@ -53,6 +64,7 @@ class TaskStack {
         'label': label,
         'tasks': tasks.map((t) => t.toJson()).toList(),
         'isOptional': isOptional,
+        'optionalDefaultIncluded': optionalDefaultIncluded,
       };
 }
 

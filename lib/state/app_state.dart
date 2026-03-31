@@ -365,7 +365,8 @@ class AppState extends ChangeNotifier {
       template,
       selectedOptionalStackIds: <String>{
         for (final TaskStack stack in template.stacks.where(
-          (TaskStack stack) => stack.isOptional,
+          (TaskStack stack) =>
+              stack.isOptional && stack.optionalDefaultIncluded,
         ))
           stack.id,
       },

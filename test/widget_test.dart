@@ -292,6 +292,53 @@ void main() {
     );
   });
 
+  test('instantiating a template uses optional group defaults', () async {
+    final state = AppState();
+    final template = ChecklistTemplate(
+      id: 'template-5b',
+      label: 'Trip prep',
+      favorite: false,
+      stacks: [
+        TaskStack(
+          id: 'stack-required',
+          label: 'Always',
+          tasks: [
+            Task(id: 'task-wallet', label: 'Wallet'),
+          ],
+        ),
+        TaskStack(
+          id: 'stack-default-on',
+          label: 'Rainy weather',
+          isOptional: true,
+          optionalDefaultIncluded: true,
+          tasks: [
+            Task(id: 'task-jacket', label: 'Rain jacket'),
+          ],
+        ),
+        TaskStack(
+          id: 'stack-default-off',
+          label: 'Gym stop',
+          isOptional: true,
+          optionalDefaultIncluded: false,
+          tasks: [
+            Task(id: 'task-shoes', label: 'Gym shoes'),
+          ],
+        ),
+      ],
+    );
+
+    final checklist = state.instantiateTemplate(template);
+
+    expect(checklist.template.stacks.map((stack) => stack.id).toList(), [
+      'stack-required',
+      'stack-default-on',
+    ]);
+    expect(
+      checklist.checkboxes.map((box) => box.taskId).toList(),
+      ['task-wallet', 'task-jacket'],
+    );
+  });
+
   test('syncing an active checklist keeps omitted optional groups omitted',
       () async {
     final state = AppState();

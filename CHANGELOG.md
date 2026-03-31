@@ -2,6 +2,10 @@
 
 All notable user-facing changes to this project should be recorded here.
 
+## v1.4.0
+
+- Trimmed the remaining helper copy from the template editor and added per-group default on/off controls for optional groups.
+
 ## v1.3.0
 
 - Added versioned full-app JSON snapshots with `mind`-style automatic local backups, restore-from-backup support, and a Supabase-ready settings section that stays dormant until the app is launched with credentials.

@@ -192,7 +192,8 @@ class _OptionalGroupsDialog extends StatefulWidget {
 
 class _OptionalGroupsDialogState extends State<_OptionalGroupsDialog> {
   late final Set<String> _selectedStackIds = {
-    for (final stack in widget.optionalStacks) stack.id,
+    for (final stack in widget.optionalStacks)
+      if (stack.optionalDefaultIncluded) stack.id,
   };
 
   @override
