@@ -2,6 +2,10 @@
 
 All notable user-facing changes to this project should be recorded here.
 
+## v1.4.1
+
+- Renamed the installed app label to "Checklist templates" across supported platforms.
+
 ## v1.4.0
 
 - Trimmed the remaining helper copy from the template editor and added per-group default on/off controls for optional groups.

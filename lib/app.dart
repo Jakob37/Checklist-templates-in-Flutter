@@ -51,7 +51,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Checklist Templates',
+      title: 'Checklist templates',
       theme: buildAppTheme(),
       routerConfig: appRouter,
     );
