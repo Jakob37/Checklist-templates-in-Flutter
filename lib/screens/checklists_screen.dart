@@ -64,22 +64,44 @@ class ChecklistsScreen extends StatelessWidget {
   }
 }
 
-class _ChecklistItem extends StatelessWidget {
+class _ChecklistItem extends StatefulWidget {
   final Checklist checklist;
   const _ChecklistItem({required this.checklist});
 
+  @override
+  State<_ChecklistItem> createState() => _ChecklistItemState();
+}
+
+class _ChecklistItemState extends State<_ChecklistItem> {
+  final TextEditingController _temporaryTaskController =
+      TextEditingController();
+  final FocusNode _temporaryTaskFocusNode = FocusNode();
+  bool _isAddingTemporaryTask = false;
+
+  Checklist get checklist => widget.checklist;
+
+  @override
+  void dispose() {
+    _temporaryTaskController.dispose();
+    _temporaryTaskFocusNode.dispose();
+    super.dispose();
+  }
+
   List<_ChecklistSection> _buildSections() {
     final checkboxByTaskId = <String, Checkbox>{};
+    final temporaryBoxes = <Checkbox>[];
     for (final box in checklist.checkboxes) {
       final taskId = box.taskId;
       if (taskId != null) {
         checkboxByTaskId[taskId] = box;
+      } else {
+        temporaryBoxes.add(box);
       }
     }
 
     var fallbackIndex = 0;
 
-    return checklist.template.stacks
+    final List<_ChecklistSection> sections = checklist.template.stacks
         .map((stack) {
           final boxes = <Checkbox>[];
 
@@ -102,6 +124,56 @@ class _ChecklistItem extends StatelessWidget {
         })
         .where((section) => section.boxes.isNotEmpty)
         .toList();
+
+    if (temporaryBoxes.isNotEmpty) {
+      sections.add(
+        _ChecklistSection(
+          label: 'Temporary',
+          boxes: temporaryBoxes,
+        ),
+      );
+    }
+
+    return sections;
+  }
+
+  void _startAddingTemporaryTask() {
+    setState(() {
+      _isAddingTemporaryTask = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _temporaryTaskFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _cancelAddingTemporaryTask() {
+    setState(() {
+      _isAddingTemporaryTask = false;
+      _temporaryTaskController.clear();
+    });
+  }
+
+  Future<void> _saveTemporaryTask() async {
+    final String label = _temporaryTaskController.text.trim();
+    if (label.isEmpty) {
+      return;
+    }
+
+    await context.read<AppState>().addTemporaryCheckbox(
+          checklist.id,
+          label: label,
+        );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isAddingTemporaryTask = false;
+      _temporaryTaskController.clear();
+    });
   }
 
   @override
@@ -304,6 +376,20 @@ class _ChecklistItem extends StatelessWidget {
                 }),
               );
 
+              if (sectionIndex == sections.length - 1) {
+                widgets.add(const SizedBox(height: AppSizes.s));
+                widgets.add(
+                  _TemporaryTaskComposer(
+                    controller: _temporaryTaskController,
+                    focusNode: _temporaryTaskFocusNode,
+                    isEditing: _isAddingTemporaryTask,
+                    onStart: _startAddingTemporaryTask,
+                    onCancel: _cancelAddingTemporaryTask,
+                    onSave: _saveTemporaryTask,
+                  ),
+                );
+              }
+
               return widgets;
             }).toList(),
           ),
@@ -367,6 +453,92 @@ class _ChecklistCount extends StatelessWidget {
           fontSize: AppSizes.textSub,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+class _TemporaryTaskComposer extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isEditing;
+  final VoidCallback onStart;
+  final VoidCallback onCancel;
+  final Future<void> Function() onSave;
+
+  const _TemporaryTaskComposer({
+    required this.controller,
+    required this.focusNode,
+    required this.isEditing,
+    required this.onStart,
+    required this.onCancel,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isEditing) {
+      return OutlinedButton.icon(
+        onPressed: onStart,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.border),
+          foregroundColor: AppColors.light,
+        ),
+        icon: const Icon(Icons.add_task_outlined),
+        label: const Text('Add temporary task'),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.s),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSizes.borderRadius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            focusNode: focusNode,
+            style: const TextStyle(color: AppColors.light),
+            decoration: const InputDecoration(
+              hintText: 'Temporary task',
+              hintStyle: TextStyle(color: AppColors.faint),
+              border: InputBorder.none,
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => onSave(),
+          ),
+          const SizedBox(height: AppSizes.s),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) {
+              final bool canSave = value.text.trim().isNotEmpty;
+              return Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: onCancel,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.border),
+                      foregroundColor: AppColors.light,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: AppSizes.s),
+                  ElevatedButton(
+                    onPressed: canSave ? onSave : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.highlight1,
+                      foregroundColor: AppColors.white,
+                    ),
+                    child: const Text('Ok'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

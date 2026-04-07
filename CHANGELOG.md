@@ -2,6 +2,10 @@
 
 All notable user-facing changes to this project should be recorded here.
 
+## v1.5.0
+
+- Added inline temporary checklist tasks so active runs can get extra one-off checkboxes without changing the template.
+
 ## v1.4.1
 
 - Renamed the installed app label to "Checklist templates" across supported platforms.

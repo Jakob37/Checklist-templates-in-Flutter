@@ -403,6 +403,107 @@ void main() {
     );
   });
 
+  test('temporary checklist tasks can be added without changing the template',
+      () async {
+    final state = AppState();
+    final template = state.buildTemplate(
+      templateId: 'template-temp',
+      templateName: 'Trip prep',
+      isFavorite: false,
+      taskLabels: ['Wallet'],
+    );
+
+    await state.saveTemplate(template);
+
+    final checklist = state.instantiateTemplate(template);
+    await state.saveChecklist(checklist);
+    await state.addTemporaryCheckbox(
+      checklist.id,
+      label: 'Passport',
+    );
+
+    final updatedChecklist = state.checklists.single;
+
+    expect(
+      updatedChecklist.checkboxes.map((box) => box.label).toList(),
+      ['Wallet', 'Passport'],
+    );
+    expect(
+      updatedChecklist.checkboxes.map((box) => box.taskId).toList(),
+      [template.stacks.first.tasks.first.id, null],
+    );
+    expect(state.getTemplateById(template.id).taskCount, 1);
+  });
+
+  test('temporary checklist tasks survive template sync and reset', () async {
+    final state = AppState();
+    final template = state.buildTemplate(
+      templateId: 'template-temp-sync',
+      templateName: 'Trip prep',
+      isFavorite: false,
+      taskLabels: ['Wallet'],
+    );
+
+    await state.saveTemplate(template);
+
+    final checklist = state.instantiateTemplate(template);
+    await state.saveChecklist(checklist);
+    await state.addTemporaryCheckbox(
+      checklist.id,
+      label: 'Passport',
+    );
+    await state.toggleCheck(
+        checklist.id, state.checklists.single.checkboxes[1].id);
+
+    final updatedTemplate = ChecklistTemplate(
+      id: template.id,
+      label: template.label,
+      favorite: template.favorite,
+      stacks: [
+        TaskStack(
+          id: template.stacks.first.id,
+          label: template.stacks.first.label,
+          tasks: [
+            Task(
+              id: template.stacks.first.tasks.first.id,
+              label: 'House wallet',
+            ),
+            Task(id: 'task-phone', label: 'Phone'),
+          ],
+        ),
+      ],
+    );
+
+    await state.saveTemplate(updatedTemplate, syncActiveChecklists: true);
+
+    var syncedChecklist = state.checklists.single;
+    expect(
+      syncedChecklist.checkboxes.map((box) => box.label).toList(),
+      ['House wallet', 'Phone', 'Passport'],
+    );
+    expect(
+      syncedChecklist.checkboxes.map((box) => box.taskId).toList(),
+      [template.stacks.first.tasks.first.id, 'task-phone', null],
+    );
+    expect(
+      syncedChecklist.checkboxes.last.checked,
+      CheckboxStatus.checked,
+    );
+
+    await state.resetChecklist(syncedChecklist.id);
+    syncedChecklist = state.checklists.single;
+    expect(
+      syncedChecklist.checkboxes.map((box) => box.label).toList(),
+      ['House wallet', 'Phone', 'Passport'],
+    );
+    expect(
+      syncedChecklist.checkboxes.every(
+        (box) => box.checked == CheckboxStatus.unchecked,
+      ),
+      isTrue,
+    );
+  });
+
   test('scheduled templates auto-instantiate once per day after the set time',
       () async {
     var now = DateTime(2026, 3, 18, 9, 30);

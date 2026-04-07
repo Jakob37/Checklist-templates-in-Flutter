@@ -205,6 +205,34 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addTemporaryCheckbox(
+    String checklistId, {
+    required String label,
+  }) async {
+    final String trimmedLabel = label.trim();
+    if (trimmedLabel.isEmpty) {
+      return;
+    }
+
+    _checklists = _checklists.map((Checklist checklist) {
+      if (checklist.id != checklistId) {
+        return checklist;
+      }
+      return checklist.copyWith(
+        checkboxes: <Checkbox>[
+          ...checklist.checkboxes,
+          Checkbox(
+            id: generateId('checkbox'),
+            label: trimmedLabel,
+            checked: CheckboxStatus.unchecked,
+          ),
+        ],
+      );
+    }).toList();
+    await _persistState();
+    notifyListeners();
+  }
+
   Future<void> resetChecklist(String checklistId) async {
     _checklists = _checklists.map((Checklist checklist) {
       if (checklist.id != checklistId) {
@@ -470,6 +498,7 @@ class AppState extends ChangeNotifier {
       stacks: syncedStacks,
     );
     final Map<String, Checkbox> checkboxByTaskId = <String, Checkbox>{};
+    final List<Checkbox> temporaryCheckboxes = <Checkbox>[];
     final Iterable<Task> previousTasks = checklist.template.stacks.expand(
       (TaskStack stack) => stack.tasks,
     );
@@ -485,6 +514,8 @@ class AppState extends ChangeNotifier {
     for (final Checkbox box in checklist.checkboxes) {
       if (box.taskId != null) {
         checkboxByTaskId[box.taskId!] = box;
+      } else {
+        temporaryCheckboxes.add(box);
       }
     }
 
@@ -504,7 +535,10 @@ class AppState extends ChangeNotifier {
 
     return checklist.copyWith(
       template: syncedTemplate,
-      checkboxes: syncedCheckboxes,
+      checkboxes: <Checkbox>[
+        ...syncedCheckboxes,
+        ...temporaryCheckboxes,
+      ],
     );
   }
 
